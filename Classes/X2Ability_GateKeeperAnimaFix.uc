@@ -1,0 +1,112 @@
+class X2Ability_GatekeeperAnimaFix extends X2Ability_Gatekeeper;
+
+static function X2AbilityTemplate NewCreateAnimaConsumeAbility() {
+	local X2AbilityTemplate Template;
+	local X2AbilityCost_ActionPoints ActionPointCost;
+	local X2Condition_UnitValue	IsOpen;
+	local X2Condition_UnitProperty TargetPropertyCondition;
+	local X2Effect_ApplyWeaponDamage WeaponDamageEffect;
+	local X2Effect_LifeSteal LifeStealEffect;
+	local X2Effect_SpawnPsiZombie SpawnZombieEffect;
+	local X2Condition_UnitValue UnitValue;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'AnimaConsume');
+
+	Template.AbilitySourceName = 'eAbilitySource_Standard';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_AlwaysShow;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_gatekeeper_animaconsume";
+
+	ActionPointCost = new class'X2AbilityCost_ActionPoints';
+	ActionPointCost.iNumPoints = 1;
+	ActionPointCost.bConsumeAllPoints = true;
+	Template.AbilityCosts.AddItem(ActionPointCost);
+	
+	Template.AbilityToHitCalc = new class'X2AbilityToHitCalc_StandardMelee';
+
+	Template.AbilityTargetStyle = default.SimpleSingleMeleeTarget;
+	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
+
+	// Shooter Conditions
+	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+
+	// Set up conditions for Open check.
+	IsOpen = new class'X2Condition_UnitValue';
+	IsOpen.AddCheckValue(default.OpenCloseAbilityName, GATEKEEPER_OPEN_VALUE, eCheck_Exact, , , 'AA_GatekeeperClosed');
+	Template.AbilityShooterConditions.AddItem(IsOpen);
+
+	// Target Conditions
+	TargetPropertyCondition = new class'X2Condition_UnitProperty';
+	TargetPropertyCondition.ExcludeDead = true;
+	TargetPropertyCondition.ExcludeFriendlyToSource = true;
+	TargetPropertyCondition.ExcludeHostileToSource = false;
+	TargetPropertyCondition.FailOnNonUnits = true;
+	TargetPropertyCondition.RequireWithinRange = true;
+	TargetPropertyCondition.WithinRange = default.ANIMA_CONSUME_RANGE_UNITS;
+
+	Template.AbilityTargetConditions.AddItem(TargetPropertyCondition);
+	Template.AbilityTargetConditions.AddItem(default.GameplayVisibilityCondition);
+
+	Template.AbilityTargetConditions.AddItem(new class'X2Condition_Room');
+
+	Template.AddShooterEffectExclusions();
+
+	// Damage Effect
+	WeaponDamageEffect = new class'X2Effect_ApplyWeaponDamage';
+	WeaponDamageEffect.EffectDamageValue = class'X2Item_DefaultWeapons'.default.Gatekeeper_AnimaConsume_BaseDamage;
+	Template.AddTargetEffect(WeaponDamageEffect);
+
+	// Life Steal Effect - Same as damage target but must be organic
+	TargetPropertyCondition = new class'X2Condition_UnitProperty';
+	TargetPropertyCondition.ExcludeDead = false;
+	TargetPropertyCondition.ExcludeFriendlyToSource = true;
+	TargetPropertyCondition.ExcludeHostileToSource = false;
+	TargetPropertyCondition.FailOnNonUnits = true;
+	TargetPropertyCondition.ExcludeRobotic = true;
+
+	LifeStealEffect = new class'X2Effect_LifeSteal';
+	LifeStealEffect.LifeAmountMultiplier = default.ANIMA_CONSUME_LIFE_AMOUNT_MULTIPLIER;
+	LifeStealEffect.TargetConditions.AddItem(TargetPropertyCondition);
+	LifeStealEffect.DamageTypes.AddItem('Psi');
+	Template.AddTargetEffect(LifeStealEffect);
+
+	// DO NOT CHANGE THE ORDER OF THE DAMAGE AND THIS EFFECT
+	// Apply this effect to the target if it died
+	SpawnZombieEffect = new class'X2Effect_SpawnPsiZombie';
+	SpawnZombieEffect.BuildPersistentEffect(1);
+	SpawnZombieEffect.DamageTypes.AddItem('Psi');
+
+	// The unit must be organic, dead, and not an alien
+	TargetPropertyCondition = new class'X2Condition_UnitProperty';
+	TargetPropertyCondition.ExcludeDead = false;
+	TargetPropertyCondition.ExcludeAlive = true;
+	TargetPropertyCondition.ExcludeRobotic = true;
+	TargetPropertyCondition.ExcludeOrganic = false;
+	TargetPropertyCondition.ExcludeAlien = true;
+	TargetPropertyCondition.ExcludeCivilian = false;
+	TargetPropertyCondition.ExcludeCosmetic = true;
+	TargetPropertyCondition.ExcludeFriendlyToSource = false;
+	TargetPropertyCondition.ExcludeHostileToSource = false;
+	TargetPropertyCondition.FailOnNonUnits = true;
+	SpawnZombieEffect.TargetConditions.AddItem(TargetPropertyCondition);
+
+	// This effect is only valid if the target has not yet been turned into a zombie
+	UnitValue = new class'X2Condition_UnitValue';
+	UnitValue.AddCheckValue(class'X2Effect_SpawnPsiZombie'.default.TurnedZombieName, 1, eCheck_LessThan);
+	SpawnZombieEffect.TargetConditions.AddItem(UnitValue);
+
+	Template.AddTargetEffect(SpawnZombieEffect);
+	// DO NOT CHANGE THE ORDER OF THE DAMAGE AND THIS EFFECT
+
+	Template.CustomFireAnim = 'NO_AnimaConsume';
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.BuildInterruptGameStateFn = TypicalAbility_BuildInterruptGameState;
+	Template.BuildVisualizationFn = AnimaConsume_BuildVisualization;
+	Template.CinescriptCameraType = "Gatekeeper_Probe";
+
+	Template.LostSpawnIncreasePerUse = class'X2AbilityTemplateManager'.default.StandardShotLostSpawnIncreasePerUse;
+//BEGIN AUTOGENERATED CODE: Template Overrides 'AnimaConsume'
+	Template.bFrameEvenWhenUnitIsHidden = true;
+//END AUTOGENERATED CODE: Template Overrides 'AnimaConsume'
+
+	return Template;
+}

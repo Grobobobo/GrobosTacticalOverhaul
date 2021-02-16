@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "D:/SteamLibrary/steamapps/common/XCOM-Chimera-Squad-SDK/Development/Src"
+		},
+		{
+			"path": "D:/SteamLibrary/steamapps/common/XCOM-Chimera-Squad-SDK/XComGame/Config"
+		},
+		{
+			"path": "D:/SteamLibrary/steamapps/common/XCOM-Chimera-Squad-SDK/XComGame/Localization/INT"
+		}
+	],
+	"settings": {}
+}
