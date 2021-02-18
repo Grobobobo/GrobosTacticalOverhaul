@@ -23,10 +23,10 @@ var const int MajorVersion, MinorVersion, PatchVersion;
 /// </summary>
 static event OnPostTemplatesCreated()
 {
-	AddUniversalAbilities();
-	UpdateAbilities();
-	ChainAbilityTag();
-	AddGtsUnlocks();
+	//AddUniversalAbilities();
+	//UpdateAbilities();
+	//ChainAbilityTag();
+	//AddGtsUnlocks();
 }
 
 static function bool IsNewer(XMBOverrideInterface Override)

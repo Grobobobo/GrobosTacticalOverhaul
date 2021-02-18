@@ -118,9 +118,6 @@ function RegisterForEvents(XComGameState_Effect EffectGameState)
 function EventListenerReturn OnSubservienceUnitTookEffectDamage(Object EventData, Object EventSource, XComGameState GameState, Name Event, Object CallbackData)
 {
 	local XComGameState_Unit				TargetUnitState;
-	local XComGameStateHistory History;
-
-	History = `XCOMHISTORY;
 
 	TargetUnitState = XComGameState_Unit(CallbackData);
 

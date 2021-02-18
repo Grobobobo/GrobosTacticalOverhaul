@@ -20,6 +20,15 @@ function int GetDefendingDamageModifier(XComGameState_Effect EffectState, XComGa
 	local XComGameStateHistory					History;	
 	local X2AbilityTarget_Cursor				TargetStyle;
 	local X2AbilityMultiTarget_Radius			MultiTargetStyle;
+	local array<name> IncomingTypes;
+
+	WeaponDamageEffect.GetEffectDamageTypes(NewGameState, AppliedData, IncomingTypes);
+
+	if (IncomingTypes.Find('Melee') != INDEX_NONE)
+	{
+		return 0;
+	}
+
 
 	Target = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(EffectState.ApplyEffectParameters.TargetStateObjectRef.ObjectID));
 
@@ -43,7 +52,7 @@ function int GetDefendingDamageModifier(XComGameState_Effect EffectState, XComGa
 		if (MyVisInfo.TargetCover == CT_None)
 			return 0;
 		if (MyVisInfo.TargetCover == CT_Midlevel || MyVisInfo.TargetCover == CT_Standing)
-        return -(CurrentDamage * WTS_COVER_DR_PCT * 100);
+        return -(CurrentDamage * WTS_COVER_DR_PCT);
 	}
 	else
 	{
@@ -52,7 +61,7 @@ function int GetDefendingDamageModifier(XComGameState_Effect EffectState, XComGa
             if (MyVisInfo.TargetCover == CT_None)
 			return 0;
             if (MyVisInfo.TargetCover == CT_Midlevel || MyVisInfo.TargetCover == CT_Standing)
-            return -(CurrentDamage * WTS_COVER_DR_PCT * 100);
+            return -(CurrentDamage * WTS_COVER_DR_PCT);
 		}
 	}
     return 0;     

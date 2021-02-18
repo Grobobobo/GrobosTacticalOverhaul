@@ -11,6 +11,7 @@ class X2DownloadableContentInfo_GrobosTacticalOverhaul extends X2DownloadableCon
 var config array<name> PrimaryWeaponAbilities;
 var config array<name> SecondaryWeaponAbilities;
 
+
 /// <summary>
 /// This method is run if the player loads a saved game that was created prior to this DLC / Mod being installed, and allows the 
 /// DLC / Mod to perform custom processing in response. This will only be called once the first time a player loads a save that was
@@ -80,14 +81,41 @@ static event OnPostTemplatesCreated()
 	UpdateAbilities();
 	UpdateItems();
 	UpdateCharacters();
+	UpdateStrategyTemplates();
 }
 
+static function UpdateStrategyTemplates()
+{
+	local X2StrategyElementTemplateManager StrategyManager;
+	local X2DioUnitScarTemplate ScarTemplate;
+	StrategyManager = class'X2StrategyElementTemplateManager'.static.GetStrategyElementTemplateManager();
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_HP'));
+	ScarTemplate.StepDelta = 2;
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_Offense'));
+	ScarTemplate.StepDelta = 20;
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_Mobility'));
+	ScarTemplate.StepDelta = 2;
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_Will'));
+	ScarTemplate.StepDelta = 40;
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_Dodge'));
+	ScarTemplate.StepDelta = 40;
+	ScarTemplate.LowerBound = -80;
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_CritChance'));
+	ScarTemplate.StepDelta = -40;
+	ScarTemplate.LowerBound = -80;
+
+
+}
 static function UpdateAbilities()
 {
 	local X2AbilityTemplateManager	          AllAbilities;
 	local X2AbilityTemplate                    CurrentAbility;
-	local X2Condition_UnitProperty             UnitPropertyCondition;
-	local X2Condition_UnitEffects              UnitConditionEffects;
 	local X2Effect_HuntersInstinctDamage_LW		DamageModifier;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
  
@@ -115,6 +143,10 @@ static function UpdateAbilities()
 	// Prevents them from spaming.
 	CurrentAbility = AllAbilities.FindAbilityTemplate('QuickBite');
 	CurrentAbility.AbilityCooldown = CreateCooldown(3);
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('Safeguard');
+	CurrentAbility.AbilityCooldown = CreateCooldown(2);
+
  
 	// Dark Event Flashbang fix
 	FixDarkEventFlashbang();
@@ -162,7 +194,7 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('PsiDisable');
 	MakeFreeAction(CurrentAbility);
 	
-	UpdateSubservience(AllAbilities);
+	//UpdateSubservience(AllAbilities);
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('Impel');
 	MakeFreeAction(CurrentAbility);
@@ -175,11 +207,16 @@ static function UpdateAbilities()
 
 	MakeMeleeBlueMove('ChryssalidSlash');
 	MakeMeleeBlueMove('DevastatingBlow');
+	MakeMeleeBlueMove('BreakerSmash');
 	MakeMeleeBlueMove('StandardMelee');
 	MakeMeleeBlueMove('CripplingBlow');
 	MakeMeleeBlueMove('BloodLust');
 	MakeMeleeBlueMove('BomberStrike');
-	MakeMeleeBlueMove('BomberStrike');
+	MakeMeleeBlueMove('DisablingSlash');
+	MakeMeleeBlueMove('RootingSlash');
+	MakeMeleeBlueMove('RendingSlash');
+	MakeMeleeBlueMove('TakeDown');
+	MakeMeleeBlueMove('HellionTakedown');
 
 	UpdateMindfire();
 	UpdatePsiDomain();
@@ -198,6 +235,25 @@ static function UpdateAbilities()
 	CurrentAbility.AddTargetEffect(DamageModifier);
 
 	UpdatePsionicBomb();
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('BreakerSmash');
+    CurrentAbility.AdditionalAbilities.AddItem('SecondaryMeleeDMGIncrease');    
+
+	
+	//CurrentAbility = AllAbilities.FindAbilityTemplate('ChargedBash');
+    //CurrentAbility.AdditionalAbilities.AddItem('SecondaryMeleeDMGIncrease');    
+
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('ViciousBite');
+	MakeFreeAction(CurrentAbility);
+	
+	CurrentAbility = AllAbilities.FindAbilityTemplate('DevastatingBlow');
+	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('BomberStrike');
+	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
+
+	UpdateCrowdControl();
 }
 
 static function UpdateItems()
@@ -205,6 +261,7 @@ static function UpdateItems()
 	local X2ItemTemplateManager ItemTemplateManager;
 	local X2DataTemplate DataTemplate;
 	local X2WeaponTemplate WeaponTemplate;
+	local X2WeaponUpgradeTemplate WeaponUpgradeTemplate;
 	ItemTemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
 
 	//ChangeWeaponTable( 'Praetorian_RiotShield_WPN', ENEMY_MELEE_RANGE);
@@ -256,7 +313,7 @@ static function UpdateItems()
 	foreach ItemTemplateManager.IterateTemplates(DataTemplate)
 	{
 		WeaponTemplate = X2WeaponTemplate(DataTemplate);
-		
+		WeaponUpgradeTemplate = X2WeaponUpgradeTemplate(DataTemplate);
 		
 		if(WeaponTemplate != none)
 		{
@@ -280,9 +337,108 @@ static function UpdateItems()
 				case 'WPN_Muton_Brute_Melee':
 					WeaponTemplate.ExtraDamage = class'X2Item_RebalancedWeapons'.default.BRUTE_MELEE_EXTRADAMAGE;
 					break;
+
+				//shotgunmob
+				case 'Muton_Legionairre_WPN':
+				case 'Android_Shotgun':
+				case 'THRALL_SHOTGUN':
+				case 'Muton_Brute_WPN':
+				case 'Liquidator_Shotgun':
+				case 'Muton_Bomber_WPN':
+				case 'WPN_XComShotgun':
+				case 'WPN_EpicShotgun_1':
+				case 'WPN_EpicShotgun_2':
+				case 'BreakerShotgun':
+					WeaponTemplate.Abilities.AddItem('Shotgun_StatPenalty');
+					break;
+				case 'Praetorian_ShieldPistol_WPN':
+				case 'Viper_Python_WPN':
+				case 'Sectoid_Dominator_WPN':
+				case 'Guardian_ShieldPistol_WPN':
+				case 'Android_SMG':
+				case 'Sorcerer_WPN':
+				case 'Acolyte_WPN':
+				case 'Sectoid_Resonant_WPN':
+				case 'THRALL_SMG':
+				case 'Bruiser_ShieldPistol_WPN':
+				case 'HITMAN_PISTOL':
+				case 'COBRA_SMG':
+				case 'Liquidator_SMG':
+				case 'Sectoid_Necromancer_WPN':
+				case 'TutorialTrooper_SMG':
+				case 'WPN_XComPistol':
+				case 'WPN_XComGunslingerPistol':
+				case 'WPN_XComLancerPistol':
+				case 'WPN_XComWardenPistol':
+				case 'WPN_EpicPistol_1':
+				case 'WPN_EpicPistol_2':			
+				case 'WPN_XComSMG':
+				case 'WPN_EpicSMG_1':
+				case 'WPN_EpicSMG_2':
+					WeaponTemplate.Abilities.AddItem('SMG_StatBonus');
+					break;
+
+
+			}
+		}
+		else if (WeaponUpgradeTemplate != none)
+		{
+			switch(WeaponUpgradeTemplate.DataName)
+			{
+				case 'EnhancedARsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_AR_BONUS;
+				break;
+
+				case 'MastercraftedARsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_AR_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
+				break;
+
+				case 'EnhancedSMGsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_SMG_BONUS;
+				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SMG_CRIT_BONUS;
+				break;
+
+				case 'MastercraftedSMGsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_SMG_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
+				break;
+
+				case 'EnhancedShotgunsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_SHOTGUN_BONUS;
+				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SHOTGUN_CRIT_BONUS;
+				break;
+
+				case 'MastercraftedShotgunsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_SHOTGUN_BONUS;
+				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.MASTER_SHOTGUN_CRIT_BONUS;
+				break;
+
+				case 'EnhancedPistolsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_BONUS;
+				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_CRIT_BONUS;
+				break;
+
+				case 'MastercraftedPistolsUpgrade':
+				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_PISTOLS_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
+				break;
+
 			}
 
+
+
 		}
+		
+		
 		
 
 	}
@@ -295,16 +451,26 @@ static function UpdateCharacters()
 	local X2CharacterTemplateManager	       AllCharacters;
 	local X2CharacterTemplate		          CharTemplate;
 	local array<name> nAllCharacterNames;
- 
+	local X2DataTemplate					              DifficultyTemplate;
+	local array<X2DataTemplate>		              DifficultyTemplates;
+
 	local name CurrentName;
  
 	AllCharacters = class'X2CharacterTemplateManager'.static.GetCharacterTemplateManager();
  
 	AllCharacters.GetTemplateNames(nAllCharacterNames);
  
+
+
 	foreach nAllCharacterNames ( CurrentName ) {
-	   CharTemplate = AllCharacters.FindCharacterTemplate( CurrentName );
-	   CharTemplate.CharacterBaseStats[eStat_FlankingCritChance] = class'X2Item_RebalancedWeapons'.default.FLANKING_CRIT_CHANCE;
+
+
+	   	AllCharacters.FindDataTemplateAllDifficulties(CurrentName, DifficultyTemplates);
+		foreach DifficultyTemplates(DifficultyTemplate) {
+			CharTemplate = X2CharacterTemplate(DifficultyTemplate);
+			CharTemplate.CharacterBaseStats[eStat_FlankingCritChance] = class'X2Item_RebalancedWeapons'.default.FLANKING_CRIT_CHANCE;
+		}
+		CharTemplate = AllCharacters.FindCharacterTemplate( CurrentName );
 
 	   // EXPLICIT EXCEPTIONS:
 	   switch( CurrentName ) {
@@ -385,6 +551,9 @@ static function UpdateCharacters()
 				break;
 			case 'Commando':
 			case 'SacredCoilDJ':
+				CharTemplate.Abilities.AddItem('SkirmisherStrike');
+	   			break;
+			
 
 			case 'AdvTurretM1':
 			case 'AdvMEC_M1':
@@ -393,7 +562,7 @@ static function UpdateCharacters()
 			case 'AndromedonRobot':
 			case 'Gatekeeper':
 			case 'SC_Leader':
-
+	   			break;
 			///NICE INTERNAL NAMING SYSTEM FIRAXIS, BRAVOs
 			case 'HardlinerLeader':
 			case 'Hitman':
@@ -421,6 +590,13 @@ static function UpdateCharacters()
 			case 'EPICPISTOL1Carrying_Guardian':
 				break;
 			case 'ConspiracyLeader':
+			CharTemplate.Abilities.AddItem('CloseCombatSpecialist');
+			CharTemplate.Abilities.AddItem('ChosenSoulstealer');
+			CharTemplate.Abilities.AddItem('Sentinel_LW');
+			CharTemplate.Abilities.AddItem('SkirmisherStrike');
+			CharTemplate.Abilities.AddItem('TriggerHappy');
+			CharTemplate.Abilities.AddItem('PsycjoticRage_LW');
+			CharTemplate.Abilities.AddItem('WillToSurvive');
 				break;
 		   break;
 	  default:
@@ -501,7 +677,6 @@ static function bool AbilityTagExpandHandler(string InString, out string OutStri
 {
 
 	local name Type;
-	local float TempFloat;
 
 	Type = name(InString);
 	switch(Type)
@@ -539,6 +714,13 @@ static function bool AbilityTagExpandHandler(string InString, out string OutStri
 	case 'RESILIENCE_BONUS_LW':
 		Outstring = string(class'X2Ability_XMBPerkAbilitySet'.default.RESILIENCE_CRITDEF_BONUS);
 		return true;
+	case 'EXECUTIONER_AIM_BONUS':
+		OutString = string(class'X2Effect_Executioner_LW'.default.EXECUTIONER_AIM_BONUS);
+		return true;
+	case 'EXECUTIONER_CRIT_BONUS':
+		OutString = string(class'X2Effect_Executioner_LW'.default.EXECUTIONER_CRIT_BONUS);
+		return true;
+
 	default:
 	return false;
 }
@@ -576,14 +758,6 @@ static function FinalizeUnitAbilitiesForInit(XComGameState_Unit UnitState, out a
 
 static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<AbilitySetupData> SetupData, name TemplateName)
 {
-	local array<AbilitySetupData> arrData;
-	local array<AbilitySetupData> arrAdditional;
-	local X2AbilityTemplate AbilityTemplate;
-	local name AbilityName;
-	local X2AbilityTemplateManager AbilityTemplateMan;
-
-	AbilityTemplateMan = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
-
 	switch (TemplateName)
 	{
 		case 'Thrall':
@@ -700,15 +874,6 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 
 static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<AbilitySetupData> SetupData, name TemplateName)
 {
-	local array<AbilitySetupData> arrData;
-	local array<AbilitySetupData> arrAdditional;
-	local X2AbilityTemplate AbilityTemplate;
-	local name AbilityName;
-	local X2AbilityTemplateManager AbilityTemplateMan;
-	local int i;
-	local AbilitySetupData Data, EmptyData;
-
-	AbilityTemplateMan = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	switch(TemplateName)
 	{
@@ -1103,17 +1268,23 @@ static function UpdateSubservience(X2AbilityTemplateManager AllAbilities)
 static function UpdateSubservienceSacrifice(X2AbilityTemplateManager AllAbilities)
 {
 	local X2AbilityTemplate                    Template;
-	local X2Effect_SubServienceDamage FlayDamageEffect;
+	local X2Effect_Stunned StunnedEffect;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('SubservienceSacrifice');
 
 	RemoveAbilityTargetEffects(Template,'X2Effect_ApplyWeaponDamage');
 
-	FlayDamageEffect = new class'X2Effect_SubServienceDamage';
-	FlayDamageEffect.EffectDamageValue.DamageType = 'Psi';
-	FlayDamageEffect.bIgnoreArmor = true;
-	FlayDamageEffect.bIgnoreBaseDamage = true;
-	Template.AddTargetEffect(FlayDamageEffect);	
+	StunnedEffect = class'X2StatusEffects'.static.CreateStunnedStatusEffect(1, 100);
+	StunnedEffect.BuildPersistentEffect(1, false, true, false, eWatchRule_RoundBegin);
+//	StunnedEffect.TargetConditions.AddItem(UnitEffectsCondition);
+	StunnedEffect.DuplicateResponse = eDupe_Ignore;
+	Template.AddTargetEffect(StunnedEffect);
+
+	//FlayDamageEffect = new class'X2Effect_SubServienceDamage';
+	//FlayDamageEffect.EffectDamageValue.DamageType = 'Psi';
+	//FlayDamageEffect.bIgnoreArmor = true;
+	//FlayDamageEffect.bIgnoreBaseDamage = true;
+	//Template.AddTargetEffect(FlayDamageEffect);	
 }
 
 static function RemoveTheDeathFromHolyWarriorDeath(X2AbilityTemplate Template)
@@ -1146,8 +1317,8 @@ static function UpdateMindfire()
 
 	StatChange = new class'X2Effect_PersistentStatChange';
 	StatChange.EffectName = 'MindFire';
-	StatChange.AddPersistentStatChange(eStat_Offense, -20);
-	StatChange.AddPersistentStatChange(eStat_Mobility, -5);
+	StatChange.AddPersistentStatChange(eStat_Offense, -25);
+	StatChange.AddPersistentStatChange(eStat_Mobility, -6);
 
 	
 	// Prevent the effect from applying to a unit more than once
@@ -1155,6 +1326,7 @@ static function UpdateMindfire()
 
 	// The effect lasts until the beginning of the player's next turn
 	StatChange.BuildPersistentEffect(2, false, true, false, eWatchRule_UnitTurnBegin);
+	StatChange.SetDisplayInfo(ePerkBuff_Penalty, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,, Template.AbilitySourceName);
 	Template.AddTargetEffect(StatChange);
 
 	MakeNonTurnEnding(Template);
@@ -1195,7 +1367,6 @@ static function UpdatePsionicBomb()
 {
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
-	local X2Effect_PsiDomainDamage_LW DamageEffect;
 	local X2Effect Effect;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('PsiBombStage2');
@@ -1249,3 +1420,34 @@ static function int ChangeWeaponTable( name nWeaponName, array<int> tTableArray)
  
 	return 1;
  }
+
+
+static function UpdateCrowdControl()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect Effect;
+	local X2AbilityCharges Charges;
+	local X2AbilityCost_Charges Chargecost;
+	local X2Condition_AbilityProperty AbilityCondition;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	Template = AllAbilities.FindAbilityTemplate('CrowdControl');
+
+	Charges = new class'X2AbilityCharges';
+	Charges.InitialCharges = 1;
+	Template.AbilityCharges = Charges;
+
+	ChargeCost = new class'X2AbilityCost_Charges';
+	ChargeCost.NumCharges = 1;
+	Template.AbilityCosts.AddItem(ChargeCost);
+
+	foreach Template.AbilityMultiTargetEffects(Effect)
+	{
+		if(Effect.IsA('X2Effect_Rooted')|| Effect.IsA('X2Effect_DisableWeapon') || Effect.IsA('X2Effect_PersistentStatChange') )
+		{
+			AbilityCondition = new class'X2Condition_AbilityProperty';
+			AbilityCondition.OwnerHasSoldierAbilities.AddItem('ClassTrainingAbility_Hellion');
+			Effect.TargetConditions.AddItem(AbilityCondition);		
+		}
+	}
+}

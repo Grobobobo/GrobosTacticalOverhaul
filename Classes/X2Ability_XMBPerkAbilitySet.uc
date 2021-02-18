@@ -33,6 +33,13 @@ var config int RESILIENCE_CRITDEF_BONUS;
 
 var config int DAMAGE_CONTROL_DURATION;
 var config int DAMAGE_CONTROL_BONUS_ARMOR;
+
+var config int MELEE_TIER_2_DAMAGE_BONUS;
+var config int MELEE_TIER_3_DAMAGE_BONUS;
+
+var config int SMG_MOBILITY_BONUS;
+var config int SHOTGUN_MOBILITY_PENALTY;
+
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
 var localized string RageTriggeredFriendlyDesc;
@@ -74,6 +81,8 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(AddSentinel_LWAbility());
 	Templates.AddItem(AddBastion());
 	Templates.AddItem(AddBastionPassive());
+	Templates.AddItem(AddBastionCleanse());
+
 	Templates.AddItem(Impulse());
 	Templates.AddItem(AddDamageControlAbility());
 	Templates.AddItem(AddDamageControlAbilityPassive()); //Additional Ability
@@ -92,6 +101,11 @@ static function array<X2DataTemplate> CreateTemplates()
 
 	Templates.AddItem(AddHitandSlitherAbility());
 	
+	Templates.AddItem(CreateSecondaryMeleeBuff());
+
+	Templates.AddItem(AddSMGBonusAbility());
+	Templates.AddItem(AddShotgunPenaltyAbility());
+
 	return Templates;
 }
 
@@ -1068,6 +1082,57 @@ static function X2AbilityTemplate AddBastionPassive()
 	return PurePassive('BastionPassive', "img:///UILibrary_LW_PerkPack.LW_AbilityBastion", , 'eAbilitySource_Psionic');
 }
 
+static function X2AbilityTemplate AddBastionCleanse()
+{
+	local X2AbilityTemplate                     Template;
+	local X2AbilityTrigger_EventListener        EventListener;
+	local X2Condition_UnitProperty              DistanceCondition;
+	local X2Effect_RemoveEffects				FortressRemoveEffect;
+	local X2Condition_UnitProperty              FriendCondition;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'BastionCleanse');
+
+	Template.IconImage = "img:///UILibrary_LW_PerkPack.LW_AbilityBastion";
+	Template.AbilitySourceName = 'eAbilitySource_Psionic';
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SimpleSingleTarget;
+	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+
+	EventListener = new class'X2AbilityTrigger_EventListener';
+	EventListener.ListenerData.Deferral = ELD_OnStateSubmitted;
+	EventListener.ListenerData.EventID = 'UnitMoveFinished';
+	EventListener.ListenerData.Filter = eFilter_None;
+	EventListener.ListenerData.EventFn = class'XComGameState_Ability'.static.SolaceCleanseListener;  // keep this, since it's generically just calling the associate ability
+	Template.AbilityTriggers.AddItem(EventListener);
+
+	//removes any ongoing effects
+	FortressRemoveEffect = new class'X2Effect_RemoveEffects';
+	FortressRemoveEffect.EffectNamesToRemove.AddItem(class'X2StatusEffects'.default.AcidBurningName);
+	FortressRemoveEffect.EffectNamesToRemove.AddItem(class'X2StatusEffects'.default.BurningName);
+	FortressRemoveEffect.EffectNamesToRemove.AddItem(class'X2StatusEffects'.default.PoisonedName);
+	FortressRemoveEffect.EffectNamesToRemove.AddItem(class'X2Effect_ParthenogenicPoison'.default.EffectName);
+	FriendCondition = new class'X2Condition_UnitProperty';
+	FriendCondition.ExcludeFriendlyToSource = false;
+	FriendCondition.ExcludeHostileToSource = true;
+	FortressRemoveEffect.TargetConditions.AddItem(FriendCondition);
+	Template.AddTargetEffect(FortressRemoveEffect);
+
+	DistanceCondition = new class'X2Condition_UnitProperty';
+	DistanceCondition.RequireWithinRange = true;
+	DistanceCondition.WithinRange = Sqrt(class'X2Effect_Bastion'.default.BASTION_DISTANCE_SQ) *  class'XComWorldData'.const.WORLD_StepSize; // same as Solace for now
+	DistanceCondition.ExcludeFriendlyToSource = false;
+	DistanceCondition.ExcludeHostileToSource = false;
+	Template.AbilityTargetConditions.AddItem(DistanceCondition);
+
+	Template.bSkipFireAction = true;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+
+	return Template;
+}
 static function X2AbilityTemplate Impulse()
 {
 	local X2AbilityTemplate Template;
@@ -1423,6 +1488,82 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 	//  NOTE: Visualization handled in X2Effect_HitandRun
 	return Template;
+}
+
+
+	static function X2AbilityTemplate CreateSecondaryMeleeBuff()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_SecondaryMeleeBonus				MeleeBuffsEffect;
+
+	MeleeBuffsEffect = new class'X2Effect_SecondaryMeleeBonus';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.MeleeDamageBonusTier2 = default.MELEE_TIER_2_DAMAGE_BONUS;
+    MeleeBuffsEffect.MeleeDamageBonusTier3 = default.MELEE_TIER_3_DAMAGE_BONUS;
+
+	Template = Passive('SecondaryMeleeDMGIncrease', "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
+
+
+static function X2AbilityTemplate AddSMGBonusAbility()
+{
+	local X2AbilityTemplate                 Template;	
+	local X2Effect_PersistentStatChange		PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'SMG_StatBonus');
+	Template.IconImage = "img:///gfxXComIcons.NanofiberVest";  
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	// Bonus to Mobility and DetectionRange stat effects
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, "", "", Template.IconImage, false,,Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_Mobility, default.SMG_MOBILITY_BONUS);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;	
+}
+
+	static function X2AbilityTemplate AddShotgunPenaltyAbility()
+{
+	local X2AbilityTemplate                 Template;	
+	local X2Effect_PersistentStatChange		PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'Shotgun_StatPenalty');
+	Template.IconImage = "img:///gfxXComIcons.NanofiberVest";  
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	// Bonus to Mobility and DetectionRange stat effects
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, "", "", Template.IconImage, false,,Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_Mobility, default.SHOTGUN_MOBILITY_PENALTY);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;	
 }
 defaultproperties
 {
