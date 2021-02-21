@@ -8,88 +8,12 @@
 //---------------------------------------------------------------------------------------
 //  Copyright (c) 2019 Firaxis Games, Inc. All rights reserved.
 //---------------------------------------------------------------------------------------
-class X2Effect_Subservience_LW extends X2Effect_Persistent;
+class X2Effect_Subservience_LW extends X2Effect_Subservience;
 
-function int GetDefendingDamageModifier(XComGameState_Effect EffectState, XComGameState_Unit Attacker, Damageable TargetDamageable, XComGameState_Ability AbilityState, const out EffectAppliedData AppliedData, const int CurrentDamage, X2Effect_ApplyWeaponDamage WeaponDamageEffect, optional XComGameState NewGameState)
-{
-	local XComGameState_Unit TargetUnitState;
-	local int TargetIndex;
-
-	TargetUnitState = XComGameState_Unit(TargetDamageable);
-	if( CurrentDamage > 0 && CanTriggerSubservienceSacrifice( EffectState, AbilityState, TargetUnitState ) )
-	{
-		if( TargetUnitState != None )
-		{
-			if( AppliedData.AbilityInputContext.PrimaryTarget.ObjectID == TargetUnitState.ObjectID &&
-				AppliedData.AbilityResultContext.HitResult == eHit_Deflect )
-			{
-				TargetUnitState.SetUnitFloatValue('SubservienceDamage',CurrentDamage);
-				return -CurrentDamage;
-			}
-			for( TargetIndex = 0; TargetIndex < AppliedData.AbilityInputContext.MultiTargets.Length; ++TargetIndex )
-			{
-				if( AppliedData.AbilityInputContext.MultiTargets[TargetIndex].ObjectID == TargetUnitState.ObjectID &&
-					AppliedData.AbilityResultContext.MultiTargetHitResults[TargetIndex] == eHit_Deflect )
-				{
-
-					TargetUnitState.SetUnitFloatValue('SubservienceDamage',CurrentDamage);
-					return -CurrentDamage;
-				}
-			}
-		}
-	}
-
-	return 0;
-}
-//
-//function int ModifyDamageFromDestructible(XComGameState_Destructible DestructibleState, int IncomingDamage, XComGameState_Unit TargetUnit, XComGameState_Effect EffectState)
-//{
-//	// destructible damage is always considered to be explosive (copied from X2Effect_BlastShield)
-//	return -IncomingDamage;
-//}
-
-function bool CanTriggerSubservienceSacrifice(XComGameState_Effect EffectState, XComGameState_Ability AbilityState, XComGameState_Unit TargetUnit)
-{
-	local StateObjectReference CheckAbilityRef;
-	local XComGameState_Ability CheckAbilityState;
-	local XComGameStateHistory History;
-	local XComGameState_Unit SubservienceUnit;
-	local XComGameState_Item SourceItemState;
-	local X2AbilityTemplate AbilityTemplate;
-
-	SourceItemState = AbilityState.GetSourceWeapon();
-	if( AbilityState != None && SourceItemState != None )
-	{
-		AbilityTemplate = AbilityState.GetMyTemplate();
-		if( false == AbilityTemplate.TargetEffectsDealDamage( SourceItemState, AbilityState ) )
-		{
-			return false;
-		}
-	}
-
-	if( TargetUnit != None )
-	{
-		//target must be able to pass along the 'SubservienceSacrifice' in order to deflect
-		History = `XCOMHISTORY;
-			CheckAbilityRef = TargetUnit.FindAbility( 'SubservienceSacrifice' );
-		CheckAbilityState = XComGameState_Ability( History.GetGameStateForObjectID( CheckAbilityRef.ObjectID ) );
-		SubservienceUnit = XComGameState_Unit( History.GetGameStateForObjectID( EffectState.ApplyEffectParameters.SourceStateObjectRef.ObjectID ) );
-		if( CheckAbilityState != None && SubservienceUnit != None )
-		{
-			if( CheckAbilityState.CanActivateAbilityForObserverEvent( SubservienceUnit ) == 'AA_Success' )
-			{
-				if( X2AbilityToHitCalc_StandardAim( AbilityState.GetMyTemplate().AbilityToHitCalc ) != none )
-				{
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
 function bool ChangeHitResultForTarget(XComGameState_Effect EffectState, XComGameState_Unit Attacker, XComGameState_Unit TargetUnit, XComGameState_Ability AbilityState, bool bIsPrimaryTarget, const EAbilityHitResult CurrentResult, out EAbilityHitResult NewHitResult)
 {
-	if( CanTriggerSubservienceSacrifice( EffectState, AbilityState, TargetUnit ) )
+
+	if( CanTriggerSubservienceSacrifice( EffectState, AbilityState, TargetUnit) && CurrentResult != eHit_Miss )
 	{
 		NewHitResult = eHit_Deflect;
 		return true;
@@ -98,33 +22,127 @@ function bool ChangeHitResultForTarget(XComGameState_Effect EffectState, XComGam
 	return false;
 }
 
-function RegisterForEvents(XComGameState_Effect EffectGameState)
+
+/*
+// When a unit with kinetic shield takes effect damage, remove the shield effect and trigger an event
+static function EventListenerReturn RedirectDamage(Object EventData, Object EventSource, XComGameState GameState, Name Event, Object CallbackData)
 {
-	local X2EventManager EventMgr;
-	local XComGameState_Unit TargetUnitState;
-	local XComGameStateHistory History;
-	local Object EffectObj;
+	local XComGameStateHistory				History;
+	local XComGameState_Unit				TargetUnitState, EffectOwnerState;
+	local UnitValue							SubservienceDamageTaken;
+	local XComGameState_Effect EffectState;
+	local XComGameState NewGameState;
 
-	History = `XCOMHISTORY;
-	EventMgr = `XEVENTMGR;
+		EffectState = XComGameState_Effect(EventSource);
 
-	EffectObj = EffectGameState;
-	TargetUnitState = XComGameState_Unit(History.GetGameStateForObjectID(EffectGameState.ApplyEffectParameters.TargetStateObjectRef.ObjectID));
+		History = `XCOMHISTORY;
 
-	// Register for the required events
-	EventMgr.RegisterForEvent(EffectObj, 'HitResultIs_Deflect', OnSubservienceUnitTookEffectDamage, ELD_OnStateSubmitted, , TargetUnitState);
-}
 
-function EventListenerReturn OnSubservienceUnitTookEffectDamage(Object EventData, Object EventSource, XComGameState GameState, Name Event, Object CallbackData)
-{
-	local XComGameState_Unit				TargetUnitState;
+		NewGameState = class'XComGameStateContext_ChangeContainer'.static.CreateChangeState("Set Float Values");
 
-	TargetUnitState = XComGameState_Unit(CallbackData);
+		TargetUnitState = XComGameState_Unit(History.GetGameStateForObjectID(EffectState.ApplyEffectParameters.TargetStateObjectRef.ObjectID));
+		EffectOwnerState = XComGameState_Unit(History.GetGameStateForObjectID(EffectState.ApplyEffectParameters.SourceStateObjectRef.ObjectID));
+		
+		TargetUnitState.GetUnitValue('SubservienceDamageTaken',SubservienceDamageTaken);
+		EffectOwnerState.SetUnitFloatValue('SubservienceDamageTaken',SubservienceDamageTaken.fvalue);
+		EffectOwnerState = XComGameState_Unit(NewGameState.ModifyStateObject(EffectOwnerState.Class, EffectOwnerState.ObjectID));
 
-	`XEVENTMGR.TriggerEvent('SubservienceDamageAbsorbed', TargetUnitState, TargetUnitState, GameState);
+		`XEVENTMGR.TriggerEvent('SubservienceDamageAbsorbed', TargetUnitState, TargetUnitState, NewGameState);
+
+		`TACTICALRULES.SubmitGameState(NewGameState);
 
 	return ELR_NoInterrupt;
 }
+
+*/
+
+/*
+static function EventListenerReturn RedirectDamage(Object EventData, Object EventSource, XComGameState GameState, Name Event, Object CallbackData)
+{
+	local XComGameState						NewGameState;
+	local XComGameStateHistory				History;
+	local XComGameStateContext_EffectRemoved EffectRemovedState;
+	local X2TacticalGameRuleset				TacticalRules;
+	local XComGameState_Unit				TargetUnitState, EffectOwnerState;
+	local UnitValue							MarkedDeflectEffectID;
+	local array<XComGameState_Effect> EffectStates;
+	local XComGameState_Effect SubservienceEffectState;
+	local XComGameState_Effect	TetherEffectState;
+	local X2Effect_Persistent	PersistentEffect;
+	SubservienceEffectState = XComGameState_Effect(CallbackData);
+	EffectStates.AddItem(SubservienceEffectState);
+
+	if (!SubservienceEffectState.bRemoved)
+	{
+		History = `XCOMHISTORY;
+
+		TargetUnitState = XComGameState_Unit(History.GetGameStateForObjectID(SubservienceEffectState.ApplyEffectParameters.TargetStateObjectRef.ObjectID));
+		EffectOwnerState = XComGameState_Unit(History.GetGameStateForObjectID(SubservienceEffectState.ApplyEffectParameters.SourceStateObjectRef.ObjectID));
+		//only remove if this is the marked effect from the deflect
+		if( !EffectOwnerState.GetUnitValue('SubServienceMarkedForRemoval', MarkedDeflectEffectID) )
+		{
+			return ELR_NoInterrupt;
+		}
+		
+		foreach `XCOMHISTORY.IterateByClassType(class'XComGameState_Effect', TetherEffectState)
+		{
+			if (SubservienceEffectState.ApplyEffectParameters.SourceStateObjectRef.ObjectID == TetherEffectState.ApplyEffectParameters.SourceStateObjectRef.ObjectID &&
+				SubservienceEffectState.ApplyEffectParameters.TargetStateObjectRef.ObjectID == TetherEffectState.ApplyEffectParameters.TargetStateObjectRef.ObjectID)
+			{
+				PersistentEffect = TetherEffectState.GetX2Effect();
+				if (PersistentEffect.EffectName == 'SubservienceTetherEffect')
+				{
+					EffectStates.AddItem(TetherEffectState);
+
+					EffectRemovedState = class'XComGameStateContext_EffectRemoved'.static.CreateEffectsRemovedContext(EffectStates);
+					NewGameState = History.CreateNewGameState(true, EffectRemovedState);
+					SubservienceEffectState.RemoveEffect(NewGameState, GameState);
+					TetherEffectState.RemoveEffect(NewGameState, GameState);
+				}
+			}
+		}
+
+		
+		`XEVENTMGR.TriggerEvent('SubservienceDamageAbsorbed', TargetUnitState, TargetUnitState, NewGameState);
+		
+		if (NewGameState.GetNumGameStateObjects() > 0)
+		{
+			TacticalRules = `TACTICALRULES;
+			TacticalRules.SubmitGameState(NewGameState);
+		}
+		else
+		{
+			History.CleanupPendingGameState(NewGameState);
+		}
+	}
+
+	return ELR_NoInterrupt;
+}
+*/
+simulated function OnEffectRemoved(const out EffectAppliedData ApplyEffectParameters, XComGameState NewGameState, bool bCleansed, XComGameState_Effect RemovedEffectState)
+{
+	local XComGameState_Effect	TetherEffectState;
+	local X2Effect_Persistent PersistentEffect;
+	super.OnEffectRemoved(ApplyEffectParameters, NewGameState, bCleansed, RemovedEffectState);
+
+	foreach `XCOMHISTORY.IterateByClassType(class'XComGameState_Effect', TetherEffectState)
+	{
+		if (ApplyEffectParameters.SourceStateObjectRef.ObjectID == TetherEffectState.ApplyEffectParameters.SourceStateObjectRef.ObjectID &&
+			ApplyEffectParameters.TargetStateObjectRef.ObjectID == TetherEffectState.ApplyEffectParameters.TargetStateObjectRef.ObjectID)
+		{
+			PersistentEffect = TetherEffectState.GetX2Effect();
+			if (PersistentEffect.EffectName == 'SubservienceTetherEffect')
+			{
+				if(!TetherEffectState.bRemoved)
+				{	
+					TetherEffectState.RemoveEffect(NewGameState, NewGameState);
+				}
+
+			}
+		}
+	}
+}
+
 DefaultProperties
 {
 	bDisplayInSpecialDamageMessageUI=true

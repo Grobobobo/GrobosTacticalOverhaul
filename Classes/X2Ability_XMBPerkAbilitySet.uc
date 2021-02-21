@@ -40,9 +40,18 @@ var config int MELEE_TIER_3_DAMAGE_BONUS;
 var config int SMG_MOBILITY_BONUS;
 var config int SHOTGUN_MOBILITY_PENALTY;
 
+var config int CHERUB_RIOT_GUARD_HP;
+
+var config int REACTION_FIRE_ANTI_COVER_BONUS;
+
+var config int EXTRA_HELLWEAVE_HP_BONUS;
+
+var config int EXTRA_HAZMAT_HP_BONUS;
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
 var localized string RageTriggeredFriendlyDesc;
+
+
 static function array<X2DataTemplate> CreateTemplates()
 {
 	local array<X2DataTemplate> Templates;
@@ -106,6 +115,17 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(AddSMGBonusAbility());
 	Templates.AddItem(AddShotgunPenaltyAbility());
 
+	Templates.AddItem(CreateReactionFireAgainstCoverBonus());
+
+	Templates.AddItem(AddExtraHellWeaveHP());
+	Templates.AddItem(AddExtraHazmatHP());
+
+	Templates.AddItem(NewFluxWeaveAbility());
+
+	Templates.AddItem(class'X2Ability_Chosen'.static.CreateMeleeImmunity());
+
+	Templates.AddItem(class'X2Ability_Chosen'.static.ChosenSoulstealer());
+	
 	return Templates;
 }
 
@@ -1519,8 +1539,10 @@ static function X2AbilityTemplate AddSMGBonusAbility()
 	Template.AbilitySourceName = 'eAbilitySource_Item';
 	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
 	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITooltip = false;
 	Template.bDisplayInUITacticalText = false;
-	
+	Template.bDontDisplayInAbilitySummary = true;
+
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
@@ -1548,8 +1570,10 @@ static function X2AbilityTemplate AddSMGBonusAbility()
 	Template.AbilitySourceName = 'eAbilitySource_Item';
 	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
 	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITooltip = false;
 	Template.bDisplayInUITacticalText = false;
-	
+	Template.bDontDisplayInAbilitySummary = true;
+
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
@@ -1565,6 +1589,246 @@ static function X2AbilityTemplate AddSMGBonusAbility()
 
 	return Template;	
 }
+
+static function X2AbilityTemplate CreateReactionFireAgainstCoverBonus()
+{
+	local X2AbilityTemplate					Template;
+	local X2Effect_ReactionFireAntiCover	AntiCoverEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'ReactionFireAgainstCoverBonus');
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_standard";
+	Template.AbilitySourceName = 'eAbilitySource_Standard';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	AntiCoverEffect = new class'X2Effect_ReactionFireAntiCover';
+	AntiCoverEffect.BuildPersistentEffect(1, true);
+	AntiCoverEffect.SetDisplayInfo(ePerkBuff_Bonus, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, false);
+	AntiCoverEffect.AimBonus = default.REACTION_FIRE_ANTI_COVER_BONUS;
+	Template.AddTargetEffect(AntiCoverEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+static function X2AbilityTemplate AddExtraHellWeaveHP()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PersistentStatChange		PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'HellWeaveBonus');
+	Template.IconImage = "img:///UILibrary_Common.ArmorMod_ExtraPadding";
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	// Bonus to health stat Effect
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false, , Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_HP, default.EXTRA_HELLWEAVE_HP_BONUS);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+static function X2AbilityTemplate AddExtraHazmatHP()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PersistentStatChange		PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'HazmatHPBonus');
+	Template.IconImage = "img:///UILibrary_Common.ArmorMod_ExtraPadding";
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	// Bonus to health stat Effect
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false, , Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_HP, default.EXTRA_HAZMAT_HP_BONUS);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+static function X2AbilityTemplate NewFluxWeaveAbility()
+{
+	local X2AbilityTemplate						Template;
+	local X2Effect_PersistentStatChange		    PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'FluxWeaveAbility');
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_Common.ArmorMod_FluxWeave";
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.EffectName = 'FluxStatBonus';
+    PersistentStatChangeEffect.AddPersistentStatChange(eStat_Defense, 10);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_Offense, 5);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_FlankingCritChance, 15);
+    Template.AddTargetEffect(PersistentStatChangeEffect);     
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: No visualization on purpose!
+
+	return Template;
+}
+
+
+static function X2AbilityTemplate CreateSustainingShield()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PersistentStatChange     ShieldedEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'SustainingShieldBonus');
+	Template.IconImage = "img:///UILibrary_Common.ArmorMod_SustainingSphere";
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+    ShieldedEffect = class'X2Ability_AdventShieldBearer'.static.CreateShieldedEffect(Template.LocFriendlyName, Template.GetMyLongDescription(), 3);
+
+	Template.AddShooterEffect(ShieldedEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+/*
+static function X2AbilityTemplate CreateCallForAndroidReinforcements()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Condition_UnitEffects           UnitEffectsCondition;
+	local X2AbilityCost_ActionPoints        ActionPointCost;
+	local X2Condition_Reinforcement			ReinforcementCondition;
+	local X2AbilityCooldown_Global			Cooldown;
+	local X2Condition_UnitEffects			UnitEffects;
+
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'XComCallForAndroidReinforcements');
+
+	Template.ShotHUDPriority = class'UIUtilities_Tactical'.const.MUST_RELOAD_PRIORITY;
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_ShowIfAvailable;
+
+	//Costs
+	ActionPointCost = new class'X2AbilityCost_ActionPoints';
+	ActionPointCost.iNumPoints = 1;
+	ActionPointCost.bConsumeAllPoints = false;
+	Template.AbilityCosts.AddItem(ActionPointCost);
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+
+	//Targeting
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+	Template.AddShooterEffectExclusions();
+	
+	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
+
+	Template.AbilityTargetStyle = default.SelfTarget;
+
+	UnitEffectsCondition = new class'X2Condition_UnitEffects';
+	UnitEffectsCondition.AddExcludeEffect(class'X2Effect_PendingReinforcements'.Default.EffectName, 'AA_DuplicateEffectIgnored');
+	Template.AbilityShooterConditions.AddItem(UnitEffectsCondition);
+
+	UnitEffects = new class'X2Condition_UnitEffects';
+	UnitEffects.AddExcludeEffect('MindControl', 'AA_UnitIsMindControlled');
+	Template.AbilityShooterConditions.AddItem(UnitEffects);
+
+	Template.BuildNewGameStateFn = AndroidReinforcement_BuildGameState; // TypicalAbility_BuildGameState;
+	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+	Template.bShowActivation = true;
+	Template.bSkipFireAction = true;
+
+	Template.bSkipExitCoverWhenFiring = true;
+
+	Template.CinescriptCameraType = "";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.Hostility = eHostility_Defensive;
+
+	//Template.CustomFireAnim = 'NO_CallReinforcements';
+
+	Cooldown = new class'X2AbilityCooldown_Global';
+	Cooldown.iNumTurns = 2;
+	Template.AbilityCooldown = Cooldown;
+
+	return Template;
+}
+
+static function XComGameState AndroidReinforcement_BuildGameState(XComGameStateContext Context)
+{
+	local XComGameState NewGameState;
+	local XComGameState_BattleData BattleData;
+	NewGameState = TypicalAbility_BuildGameState(Context);
+
+	BattleData = XComGameState_BattleData(History.GetSingleGameStateObjectForClass(class'XComGameState_BattleData'));
+
+	StartingAndroidReserves
+	class'XComGameState_AIReinforcementSpawner'.static.InitiateReinforcements(
+		'',
+		2, //OverrideCountdown, 
+		, //bUseOverrideTargetLocation, 
+		, //OverrideTargetLocation, 
+		, //IdealSpawnTilesOffset, 
+		NewGameState,
+		,
+		'', //VisualizationType, 
+		, //bDontSpawnInXComLOS, 
+		, //bMustSpawnInXComLOS,
+		, //bDontSpawnInHazards,
+		true, //bForceScamper,
+		, //bAlwaysOrientAlongLOP,
+		,
+		true, //bUseSpawnPoints,
+		, //SpawnPointsGroupTag
+	);
+
+	return NewGameState;
+}
+*/
 defaultproperties
 {
 	VampUnitValue="VampAmount"
