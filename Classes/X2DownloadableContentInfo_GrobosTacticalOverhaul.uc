@@ -290,7 +290,9 @@ static function UpdateAbilities()
 
 	UpdateExtraPadding();
 	UpdateMachWeave();
+	UpdateInfiltratorWeave();
 
+	ReplaceWithDamageReductionMelee();
 
 }
 
@@ -450,55 +452,53 @@ static function UpdateItems()
 			switch(WeaponUpgradeTemplate.DataName)
 			{
 				case 'EnhancedARsUpgrade':
-				WeaponUpgradeTemplate.BaseDamage = 0;
+				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_AR_BONUS;
 				break;
 
 				case 'MastercraftedARsUpgrade':
-				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_AR_BONUS;
+				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
+
 				break;
 
 				case 'EnhancedSMGsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_SMG_BONUS;
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SMG_CRIT_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
 				break;
 
 				case 'MastercraftedSMGsUpgrade':
-				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_SMG_BONUS;
+				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
 				break;
 
 				case 'EnhancedShotgunsUpgrade':
-				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_SHOTGUN_BONUS;
+				WeaponUpgradeTemplate.BaseDamage = 1;
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SHOTGUN_CRIT_BONUS;
 				break;
 
 				case 'MastercraftedShotgunsUpgrade':
-				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_SHOTGUN_BONUS;
+				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.MASTER_SHOTGUN_CRIT_BONUS;
 				break;
 
 				case 'EnhancedPistolsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_CRIT_BONUS;
 				break;
 
 				case 'MastercraftedPistolsUpgrade':
-				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusDamage = class'X2Item_RebalancedWeapons'.default.MASTER_PISTOLS_BONUS;
+				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
 				break;
 
 			}
 		}
-		else if(EquipmentTemplate != none)
+		if(EquipmentTemplate != none)
 		{
 			switch(EquipmentTemplate.DataName)
 			{
@@ -514,7 +514,7 @@ static function UpdateItems()
 					break;
 				
 				case 'InfiltratorWeave':
-					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, -2);
+					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, 2);
 					break;
 				case 'FluxWeave':
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.AimLabel, eStat_Offense, 5);
@@ -678,7 +678,7 @@ static function UpdateCharacters()
 			case 'EPICAR2Carrying_Commando':
 			case 'EPICSHOTGUN1Carrying_Brute':
 			CharTemplate.Abilities.AddItem('PrimaryReturnFire');
-			CharTemplate.Abilities.AddItem('TargetingSystemHoloTargeting');
+			//CharTemplate.Abilities.AddItem('TargetingSystemHoloTargeting');
 
 				break;
 			case 'Viper_Cobra':
@@ -1763,7 +1763,6 @@ static function UpdateInfiltratorWeave()
 	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
 	PersistentStatChangeEffect.EffectName = 'InfiltratorMobilityBonus';
 	PersistentStatChangeEffect.AddPersistentStatChange(eStat_Mobility, 2);
-	Template.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, -1);
 
 	Template.AddTargetEffect(PersistentStatChangeEffect);
 

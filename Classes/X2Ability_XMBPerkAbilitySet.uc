@@ -121,7 +121,11 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(AddExtraHazmatHP());
 
 	Templates.AddItem(NewFluxWeaveAbility());
+	Templates.AddItem(CreateSustainingShield());
 
+	Templates.AddItem(AddCritDamageWeaponBonus());
+
+	
 	Templates.AddItem(class'X2Ability_Chosen'.static.CreateMeleeImmunity());
 
 	Templates.AddItem(class'X2Ability_Chosen'.static.ChosenSoulstealer());
@@ -1735,6 +1739,37 @@ static function X2AbilityTemplate CreateSustainingShield()
 
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 
+	return Template;
+}
+
+static function X2AbilityTemplate AddCritDamageWeaponBonus()
+{
+	local X2AbilityTemplate						Template;
+	local X2Effect_PrimaryHitBonusCritDamage        DamageEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'WeaponUpgradeCritDamageBonus');
+	Template.IconImage = "img:///UILibrary_LW_PerkPack.LW_AbilityCenterMass";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	Template.bIsPassive = true;
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	DamageEffect = new class'X2Effect_PrimaryHitBonusCritDamage';
+	DamageEffect.BonusCritDamage = 1;
+	DamageEffect.BuildPersistentEffect(1, true, false, false);
+	DamageEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
+	Template.AddTargetEffect(DamageEffect);
+	Template.bCrossClassEligible = true;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  No visualization
+	// NOTE: Limitation of this ability to PRIMARY weapons only must be configured in ClassData.ini, otherwise will apply to pistols/swords, etc., contrary to design and loc text
+	// Ability parameter is ApplyToWeaponSlot=eInvSlot_PrimaryWeapon
 	return Template;
 }
 
