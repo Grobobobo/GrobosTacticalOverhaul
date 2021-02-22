@@ -476,7 +476,7 @@ static function UpdateItems()
 
 				case 'EnhancedShotgunsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 1;
-				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('WeaponUpgradeCritDamageBonus');
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SHOTGUN_CRIT_BONUS;
 				break;
 
@@ -487,7 +487,7 @@ static function UpdateItems()
 
 				case 'EnhancedPistolsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 0;
-				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('WeaponUpgradeCritDamageBonus');
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_CRIT_BONUS;
 				break;
 
