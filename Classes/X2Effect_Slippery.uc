@@ -23,9 +23,6 @@ function GetToHitAsTargetModifiers(XComGameState_Effect EffectState, XComGameSta
 {
     local ShotModifierInfo ShotInfo;
 
-	if (Target.IsImpaired(false) || Target.IsBurning() || Target.IsPanicked())
-		return;
-
 	if (Target.IsUnitApplyingEffectName( class'X2AbilityTemplateManager'.default.BoundName))
 	{
 		ShotInfo.ModType = eHit_Success;

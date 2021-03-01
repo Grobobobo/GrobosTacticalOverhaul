@@ -11,7 +11,7 @@ function int GetAttackingDamageModifier(XComGameState_Effect EffectState, XComGa
 
     Armor = Attacker.GetItemInSlot(eInvSlot_Armor);
 
-    if (AbilityState.GetMyTemplateName() == 'Takedown' || AbilityState.GetMyTemplateName() == 'ChargedBash' || AbilityState.GetMyTemplateName() == 'HellionTakedown'
+    if (AbilityState.GetMyTemplateName() == 'Takedown' || AbilityState.GetMyTemplateName() == 'HellionTakedown'
     || AbilityState.GetMyTemplateName() == 'RiotBash')
     {
         return 0; // don't incresae damage for takedowns

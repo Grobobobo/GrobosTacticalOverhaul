@@ -28,7 +28,7 @@ function int GetAttackingDamageModifier(XComGameState_Effect EffectState, XComGa
 		{
 			return 0;
 		}		
-		if (AbilityState.SourceWeapon == EffectState.ApplyEffectParameters.ItemStateObjectRef)
+		if (AbilityState.SourceWeapon == EffectState.ApplyEffectParameters.ItemStateObjectRef || AbilityState.GetSourceWeapon().GetMyTemplateName() == 'WPN_XComLancerPistol')
 		{
 			if (AppliedData.AbilityResultContext.HitResult == eHit_Crit)
 			{

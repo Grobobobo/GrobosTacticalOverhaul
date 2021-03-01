@@ -35,7 +35,9 @@ event name CallAbilityMeetsCondition(XComGameState_Ability kAbility, XComGameSta
 
 	StandardAim = X2AbilityToHitCalc_StandardAim(kAbility.GetMyTemplate().AbilityToHitCalc);
 	if (StandardAim == none || !StandardAim.bReactionFire)
-		return 'AA_NotReactionFire';  // NOTE: Nonstandard AA code
+		{
+			return 'AA_AbilityUnavailable';  // NOTE: Nonstandard AA code
+		}
 
 	return 'AA_Success';
 }

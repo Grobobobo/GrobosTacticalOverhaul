@@ -201,13 +201,13 @@ protected function int GetHitChance(XComGameState_Ability kAbility, AvailableTar
 	local XComGameState_Item SourceWeapon;
 	local GameRulesCache_VisibilityInfo VisInfo;
 	local array<X2WeaponUpgradeTemplate> WeaponUpgrades;
-	local int i, iWeaponMod, iRangeModifier, Tiles;
+	local int i, iWeaponMod, iRangeModifier;
 	local ShotBreakdown EmptyShotBreakdown;
 	local array<ShotModifierInfo> EffectModifiers, FinalEffectModifiers;
 	local StateObjectReference EffectRef;
 	local XComGameState_Effect EffectState;
 	local XComGameStateHistory History;
-	local bool bFlanking, bIgnoreGraze, bSquadsight, bIgnoreCrit;
+	local bool bFlanking, bIgnoreGraze, bIgnoreCrit;
 	local string IgnoreGrazeReason, IgnoreCritReason;
 	local X2AbilityTemplate AbilityTemplate;
 	local array<XComGameState_Effect> StatMods;
@@ -271,8 +271,6 @@ protected function int GetHitChance(XComGameState_Ability kAbility, AvailableTar
 			{	
 				if (UnitState.CanFlank() && TargetState.GetMyTemplate().bCanTakeCover && VisInfo.TargetCover == CT_None)
 					bFlanking = true;
-				if (VisInfo.bClearLOS && !VisInfo.bVisibleGameplay)
-					bSquadsight = true;
 
 				//  Add basic offense and defense values
 				AddModifier(UnitState.GetBaseStat(eStat_Offense), class'XLocalizedData'.default.OffenseStat, m_ShotBreakdown, eHit_Success, bDebugLog);

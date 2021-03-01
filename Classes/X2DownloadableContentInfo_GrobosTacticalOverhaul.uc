@@ -107,7 +107,7 @@ static function UpdateStrategyTemplates()
 	ScarTemplate.LowerBound = -80;
 
 	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_CritChance'));
-	ScarTemplate.StepDelta = -40;
+	ScarTemplate.StepDelta = 40;
 	ScarTemplate.LowerBound = -80;
 
 
@@ -124,6 +124,7 @@ static function UpdateAbilities()
 	// I dont think this is in game but if it is, its now fixed.
 	AllAbilities.AddAbilityTemplate(class'X2Ability_DarkEvents_Fixed'.static.DarkEventAbility_LightningReflexes(), true);
 	
+
 	// Cannot use Reload if Panicked, Berserk, Muton Rage or Frenzied
 	UpdateReload(AllAbilities);
  
@@ -140,10 +141,25 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('TargetingSystem');
 	CurrentAbility.AbilityCooldown = CreateCooldown(1);
  
+	CurrentAbility = AllAbilities.FindAbilityTemplate('CloseCombatSpecialistShot');
+	CurrentAbility.AbilityCooldown = CreateCooldown(1);
+
+	UpdateCombatProtocol();
+
+
+	RemoveTheDeathFromHolyWarriorDeath();
+
+	UpdateGunslingerBreach();
+
 	// Prevents them from spaming.
 	CurrentAbility = AllAbilities.FindAbilityTemplate('QuickBite');
 	CurrentAbility.AbilityCooldown = CreateCooldown(2);
+	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
 
+	UpdateRiotBash();
+
+	MakeNonTurnEnding(CurrentAbility);
+	UpdateHackRobot();
 	UpdateKineticArmor();
 
 	UpdateGuard();
@@ -152,6 +168,8 @@ static function UpdateAbilities()
 	UpdateHailOfBullets();
  
 	UpdateAidProtocol();
+
+	UpdateTracerRounds();	
 
 	// Dark Event Flashbang fix
 	FixDarkEventFlashbang();
@@ -214,23 +232,34 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('PsionicSuplex');
 	MakeNonTurnEnding(CurrentAbility);
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('Tyranny');
+	MakeNonTurnEnding(CurrentAbility);
+
 	MakeMeleeBlueMove('ChryssalidSlash');
 	MakeMeleeBlueMove('DevastatingBlow');
 	MakeMeleeBlueMove('BreakerSmash');
-	MakeMeleeBlueMove('StandardMelee');
+	//MakeMeleeBlueMove('StandardMelee');
 	MakeMeleeBlueMove('CripplingBlow');
 	MakeMeleeBlueMove('BloodLust');
 	MakeMeleeBlueMove('BomberStrike');
 	MakeMeleeBlueMove('DisablingSlash');
 	MakeMeleeBlueMove('RootingSlash');
 	MakeMeleeBlueMove('RendingSlash');
+	MakeMeleeBlueMove('DisarmingSlash');
 	MakeMeleeBlueMove('TakeDown');
 	MakeMeleeBlueMove('HellionTakedown');
+	MakeMeleeBlueMove('TriggerSelfDestruct');
+	MakeMeleeBlueMove('RiotBash');
+	MakeMeleeBlueMove('QuickBite');
+	MakeMeleeBlueMove('MeleeStrike');
 	//MakeMeleeBlueMove('ChargedBash');
 
+	
+	
 	UpdateMindfire();
 	UpdatePsiDomain();
 
+	UpdateSustainEffect();
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ChosenSoulStealer');
 	CurrentAbility.AdditionalAbilities.AddItem('ChosenSoulstealerPassive');
 	
@@ -249,13 +278,14 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('SprayAndPray');
 	CurrentAbility.bDisplayInUITooltip = false;
 	CurrentAbility.bDisplayInUITacticalText = false;
+	CurrentAbility.bDontDisplayInAbilitySummary = true;
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('BreakerSmash');
-    CurrentAbility.AdditionalAbilities.AddItem('SecondaryMeleeDMGIncrease');    
+    CurrentAbility.AdditionalAbilities.AddItem('BreakerBonus');    
 
 	
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ChargedBash');
-    CurrentAbility.AdditionalAbilities.AddItem('SecondaryMeleeDMGIncrease'); 
+    CurrentAbility.AdditionalAbilities.AddItem('WardenBonus'); 
 	X2AbilityTarget_MovingMelee(CurrentAbility.AbilityTargetStyle).MovementRangeAdjustment=1;
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ViciousBite');
@@ -264,21 +294,31 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('DevastatingBlow');
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('DevastatingPunch');
+	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
+
+	
 	CurrentAbility = AllAbilities.FindAbilityTemplate('BomberStrike');
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('MeleeStrike');
+	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
+	
+	CurrentAbility = AllAbilities.FindAbilityTemplate('ScatterShot');
+	X2AbilityToHitCalc_StandardAim(CurrentAbility.AbilityToHitCalc).bAllowCrit = true;
 
 	UpdateCoolUnderPressure();
 	UpdateCrowdControl();
+	UpdateReaper();
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('PistolStandardShot');
 	CurrentAbility.AddTargetEffect(class'X2Ability_Chosen'.static.HoloTargetEffect());
-	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect(true));
+	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect());
 	CurrentAbility.AssociatedPassives.AddItem('HoloTargeting');
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('DisablingShot');
 	CurrentAbility.AddTargetEffect(class'X2Ability_Chosen'.static.HoloTargetEffect());
-	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect(true));
+	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect());
 	CurrentAbility.AssociatedPassives.AddItem('HoloTargeting');
 
 
@@ -294,6 +334,10 @@ static function UpdateAbilities()
 
 	ReplaceWithDamageReductionMelee();
 
+	UpdateVentilate();
+
+	UpdateWrithe();
+
 }
 
 static function UpdateItems()
@@ -303,7 +347,15 @@ static function UpdateItems()
 	local X2WeaponTemplate WeaponTemplate;
 	local X2WeaponUpgradeTemplate WeaponUpgradeTemplate;
 	local X2EquipmentTemplate EquipmentTemplate;
+	local X2GremlinTemplate GremlinTemplate;
+	local X2GrenadeTemplate GrenadeTemplate;
 	ItemTemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
+
+
+	//GremlinTemplate = X2GremlinTemplate(ItemTemplateManager.FindItemTemplate('WPN_XComOperatorGremlin'));
+	//GremlinTemplate.BaseDamage.Spread=1;
+	//GremlinTemplate.BaseDamage.Damage=4;
+
 
 	//ChangeWeaponTable( 'Praetorian_RiotShield_WPN', ENEMY_MELEE_RANGE);
 	//ChangeWeaponTable( 'Guardian_RiotShield_WPN', ENEMY_MELEE_RANGE);
@@ -346,7 +398,7 @@ static function UpdateItems()
 	ChangeWeaponTable( 'TutorialTrooper_SMG', class'X2Item_DefaultWeapons'.default.XCOM_MEDIUM_MAGNETIC_RANGE);
 	ChangeWeaponTable( 'RootingPoisonGlob', class'X2Item_DefaultWeapons'.default.XCOM_LONG_MAGNETIC_RANGE);
  
-	ChangeWeaponTable( 'Inquisitor_Tongue_WPN', class'X2Item_DefaultWeapons'.default.XCOM_LONG_MAGNETIC_RANGE);
+	ChangeWeaponTable( 'Inquisitor_Tongue_WPN', class'X2Item_DefaultWeapons'.default.XCOM_MEDIUM_MAGNETIC_RANGE);
 	ChangeWeaponTable( 'InquisitorToxicGreetingGlob', class'X2Item_DefaultWeapons'.default.XCOM_LONG_MAGNETIC_RANGE);
  
 	ChangeWeaponTable( 'WPN_XComLancerPistol', class'X2Item_DefaultWeapons'.default.XCOM_MEDIUM_MAGNETIC_RANGE);
@@ -356,6 +408,9 @@ static function UpdateItems()
 		WeaponTemplate = X2WeaponTemplate(DataTemplate);
 		WeaponUpgradeTemplate = X2WeaponUpgradeTemplate(DataTemplate);
 		EquipmentTemplate = X2EquipmentTemplate(DataTemplate);
+		GremlinTemplate = X2GremlinTemplate(DataTemplate);
+		GrenadeTemplate = X2GrenadeTemplate(DataTemplate);
+
 		if(WeaponTemplate != none)
 		{
 			switch(WeaponTemplate.DataName)
@@ -437,17 +492,15 @@ static function UpdateItems()
 				case 'WPN_EpicSMG_1':
 				case 'WPN_EpicSMG_2':
 					WeaponTemplate.Abilities.AddItem('SMG_StatBonus');
+					WeaponTemplate.Abilities.RemoveItem('SprayAndPray');
 					break;
-
-				case 'BreachSmokeBomb':
-				X2GrenadeTemplate(WeaponTemplate).ThrownGrenadeEffects.length = 0;
-				X2GrenadeTemplate(WeaponTemplate).ThrownGrenadeEffects.AddItem(new class'X2Effect_ApplySmokeGrenadeToWorld');
-					break;
+				default:
+				break;
 
 
 			}
 		}
-		else if (WeaponUpgradeTemplate != none)
+		if (WeaponUpgradeTemplate != none)
 		{
 			switch(WeaponUpgradeTemplate.DataName)
 			{
@@ -459,14 +512,15 @@ static function UpdateItems()
 				case 'MastercraftedARsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
-				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('WeaponUpgradeCritDamageBonus');
 
 				break;
 
 				case 'EnhancedSMGsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 0;
 				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SMG_CRIT_BONUS;
-				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('WeaponUpgradeCritDamageBonus');
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('WeaponUpgradeCritDamageBonus');
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('EnhancedSMGCrit');
 				break;
 
 				case 'MastercraftedSMGsUpgrade':
@@ -477,18 +531,18 @@ static function UpdateItems()
 				case 'EnhancedShotgunsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 1;
 				WeaponUpgradeTemplate.BonusAbilities.AddItem('WeaponUpgradeCritDamageBonus');
-				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_SHOTGUN_CRIT_BONUS;
 				break;
 
 				case 'MastercraftedShotgunsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 1;
-				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.MASTER_SHOTGUN_CRIT_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('MasterShotgunCrit');
+				WeaponUpgradeTemplate.BonusAbilities.RemoveItem('Shredder');
 				break;
 
 				case 'EnhancedPistolsUpgrade':
 				WeaponUpgradeTemplate.BaseDamage = 0;
 				WeaponUpgradeTemplate.BonusAbilities.AddItem('WeaponUpgradeCritDamageBonus');
-				WeaponUpgradeTemplate.CritBonus = class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_CRIT_BONUS;
+				WeaponUpgradeTemplate.BonusAbilities.AddItem('EnhancedPistolCrit');
 				break;
 
 				case 'MastercraftedPistolsUpgrade':
@@ -524,14 +578,43 @@ static function UpdateItems()
 				case 'SustainingSphere':
 					EquipmentTemplate.Abilities.AddItem('SustainingShieldBonus');
 					break;
+				case 'AdrenalWeave':
+					EquipmentTemplate.Abilities.AddItem('AdrenalHPBonus');
+					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.HealthLabel, eStat_HP, 1);
+					break;
+				case 'TracerRounds':
+					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.AimLabel, eStat_Offense, class'X2Effect_TracerRounds_LW'.default.TRACER_AIM_MOD);
+					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.CritLabel, eStat_CritChance, class'X2Effect_TracerRounds_LW'.default.TRACER_CRIT_MOD);
+					break;
+
+					
 
 				default:
 				break;					
 
 			}
 
+
 		}
-		
+		if(GrenadeTemplate != none)
+		{
+			switch(GrenadeTemplate.DataName)
+			{
+				case 'BreachSmokeBomb':
+				X2GrenadeTemplate(WeaponTemplate).ThrownGrenadeEffects.length = 0;
+				X2GrenadeTemplate(WeaponTemplate).ThrownGrenadeEffects.AddItem(new class'X2Effect_ApplySmokeGrenadeToWorld');
+				X2GrenadeTemplate(WeaponTemplate).GameArchetype = "WP_Grenade_Smoke.WP_Grenade_Smoke";
+				break;
+
+				case 'BreachCeasefirebomb':
+					X2GrenadeTemplate(WeaponTemplate).iRadius = 6;
+					X2GrenadeTemplate(WeaponTemplate).iClipSize = 1;
+					break;
+				case 'CreateBreachFlashbomb':
+					X2GrenadeTemplate(WeaponTemplate).iRadius = 6;
+					break;
+			}
+		}	
 		
 		
 
@@ -586,8 +669,10 @@ static function UpdateCharacters()
 	   switch( CurrentName ) {
 	   		case 'Thrall':
 				CharTemplate.Abilities.AddItem('WilltoSurvive');
+				break;
 
 			case 'Sorcerer':
+				CharTemplate.Abilities.AddItem('SustainingSphereAbility');
 	   			break;
 			case 'Muton_Brute':
 				CharTemplate.Abilities.RemoveItem('CriminalSentinelAbility_StandardShotActivated');
@@ -610,14 +695,12 @@ static function UpdateCharacters()
 	   			break;
 			
 			case 'Muton_Legionairre':
-				CharTemplate.Abilities.AddItem('CloseEncounters');
+				CharTemplate.Abilities.AddItem('Brawler');
 	   			break;
 	   		case 'Viper_Adder':
 				CharTemplate.Abilities.AddItem('SurvivalInstinct_LW');
-				CharTemplate.Abilities.AddItem('Whirlwind2');
 	   			break;
 			case 'Viper_Python':
-				CharTemplate.Abilities.AddItem('Slippery');
 				break;
 
 	   		case 'Sectoid_Dominator':
@@ -634,14 +717,19 @@ static function UpdateCharacters()
 			case 'Sectopod':
 				CharTemplate.Abilities.AddItem('ImpactCompensation_LW');
 				break;
-			case 'GP_Leader':
-				CharTemplate.Abilities.AddItem('ChosenSoulStealer');
-				CharTemplate.Abilities.AddItem('Fortress');
-				CharTemplate.Abilities.AddItem('Bastion');
-				break;
 
+			case 'Muton_Praetorian':
+				CharTemplate.Abilities.AddItem('LightningReflexes');
+				break;
+			case 'GP_Leader':
+				CharTemplate.Abilities.AddItem('LightningReflexes');
+				break;
+				
+			case 'SC_Leader':
 			case 'Ronin':
-			break;
+				CharTemplate.Abilities.AddItem('LowProfile');
+				CharTemplate.Abilities.RemoveItem('DarkEventAbility_LightningReflexes');
+				break;
 			case 'Purifier':
 				CharTemplate.Abilities.AddItem('TakeDown');
 				break;
@@ -655,18 +743,23 @@ static function UpdateCharacters()
 			
 
 			case 'AdvTurretM1':
+			break;
 			case 'AdvMEC_M1':
+				CharTemplate.Abilities.AddItem('DamageControl');
+				CharTemplate.Abilities.AddItem('Resilience');
+			break;
 	   		case 'Chryssalid':
 			case 'NeonateChryssalid':
 			case 'AndromedonRobot':
 			case 'Gatekeeper':
-			case 'SC_Leader':
 	   			break;
 			///NICE INTERNAL NAMING SYSTEM FIRAXIS, BRAVOs
 			case 'HardlinerLeader':
 			case 'Hitman':
 			case 'EPICPISTOL2Carrying_Hitman':
 				CharTemplate.Abilities.AddItem('HoloTargeting');
+				CharTemplate.Abilities.AddItem('TargetingSystemHoloTargeting');
+
 				CharTemplate.Abilities.RemoveItem('Desperado_Hitman');
 				CharTemplate.Abilities.AddItem('Desperado');
 				break;
@@ -678,7 +771,6 @@ static function UpdateCharacters()
 			case 'EPICAR2Carrying_Commando':
 			case 'EPICSHOTGUN1Carrying_Brute':
 			CharTemplate.Abilities.AddItem('PrimaryReturnFire');
-			//CharTemplate.Abilities.AddItem('TargetingSystemHoloTargeting');
 
 				break;
 			case 'Viper_Cobra':
@@ -700,13 +792,25 @@ static function UpdateCharacters()
 			CharTemplate.Abilities.AddItem('PsychoticRage_LW');
 			CharTemplate.Abilities.AddItem('WillToSurvive');
 				break;
-		   break;
+
+			case 'HybridCivilian':
+			case 'HumanCivilian':
+			case 'MutonCivilian':
+			case 'SectoidCivilian':
+			case 'ViperCivilian':
+			CharTemplate.CharacterBaseStats[eStat_HP] = 5;
+			break;
+		   
 	  default:
 		break;
 	 }
 
 	 CharTemplate.Abilities.AddItem('ReactionFireAgainstCoverBonus');
 	 CharTemplate.Abilities.AddItem('CoolUnderPressure');
+	 //It's better to give it to everyone to account for custom classes
+	 //not like AIs will use it
+	 CharTemplate.Abilities.AddItem('XComCallForAndroidReinforcements'); 
+	 
 
 
  
@@ -887,6 +991,8 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Bastion', UnitState);
 			break;
 		case 'Muton_Brute':
+			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
+
 			break;
 		case 'Acolyte':
 			break;
@@ -897,6 +1003,7 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Evasive', UnitState);
 			break;
 		case 'Archon':
+			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
 			break;
 		case 'ProgenyLeader':
 			AddAbilityToSetUpData(SetupData,'Bastion', UnitState);
@@ -943,15 +1050,17 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'FreeGrenades', UnitState);
 			break;
 		case 'AdvTurretM1':
+		AddAbilityToSetUpData(SetupData,'DamageControl', UnitState);
+		break;
 		case 'AdvMEC_M1':
-			AddAbilityToSetUpData(SetupData,'DamageControl', UnitState);
 		break;
 		case 'Chryssalid':
 			break;
 		case 'NeonateChryssalid':
 			break;
 		case 'Andromedon':
-
+			AddAbilityToSetUpData(SetupData,'WillToSurvive', UnitState);
+			break;
 		case 'AndromedonRobot':
 		case 'Gatekeeper':
 		
@@ -971,6 +1080,7 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'EPICAR1Carrying_Adder':
 		case 'EPICAR2Carrying_Commando':
 		case 'EPICSHOTGUN1Carrying_Brute':
+			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
 			break;
 		case 'Viper_Cobra':
 		case 'EPICSMG2Carrying_Resonant':
@@ -1001,14 +1111,17 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Fortress', UnitState);
 			break;
 		case 'Muton_Brute':
-			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
+			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
 			break;
 		case 'Acolyte':
+			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
 			break;
 		case 'Sectoid_Resonant':
 			AddAbilityToSetUpData(SetupData,'Vampirism_LW', UnitState);
 			break;
 		case 'Cyberus':
+			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
+			AddAbilityToSetUpData(SetupData,'Predator_LW', UnitState);
 			break;
 		case 'Archon':
 			AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
@@ -1019,23 +1132,33 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'Muton_Legionairre':
 			AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
 			break;
-		case 'Viper_Adder':
+		case 'Viper_Adder':	
+			AddAbilityToSetUpData(SetupData,'Predator_LW', UnitState);
+			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
 			break;
 		case 'Viper_Python':
 			AddAbilityToSetUpData(SetupData,'Infighter', UnitState);
 			break;
 
 		case 'Sectoid_Dominator':
+			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
+			break;
 		case 'Sectoid_Paladin':
+			AddAbilityToSetUpData(SetupData,'TriggerHappy', UnitState);
 			break;
 		case 'Berserker':
 			AddAbilityToSetUpData(SetupData,'BullRush', UnitState);
 			break;
 		case 'Faceless':
-		
+			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
+			break;
 		case 'Sectopod':
 			break;
+		case 'Muton_Praetorian':
+			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
+			break;
 		case 'GP_Leader':
+			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
 			break;
 
 		case 'Ronin':
@@ -1051,10 +1174,16 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Impulse_LW', UnitState);
 
 		case 'AdvTurretM1':
+			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
+		break;
 		case 'AdvMEC_M1':
 
 		case 'Chryssalid':
 		case 'NeonateChryssalid':
+
+		case 'Andromedon':
+		AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
+		break;
 		case 'AndromedonRobot':
 		case 'Gatekeeper':
 		case 'SC_Leader':
@@ -1079,6 +1208,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		case 'Bruiser':
 		case 'EPICPISTOL1Carrying_Guardian':
+			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
 			break;
 		case 'ConspiracyLeader':
 			break;
@@ -1318,6 +1448,28 @@ static function RemoveAbilityTargetEffects(X2AbilityTemplate Template, name Effe
 		}
 	}
 }
+static function RemoveAbilityShooterEffects(X2AbilityTemplate Template, name EffectName)
+{
+	local int i;
+	for (i = Template.AbilityShooterEffects.Length - 1; i >= 0; i--)
+	{
+		if (Template.AbilityShooterEffects[i].isA(EffectName))
+		{
+			Template.AbilityShooterEffects.Remove(i, 1);
+		}
+	}
+}
+static function RemoveAbilityTargetConditions(X2AbilityTemplate Template, name EffectName)
+{
+	local int i;
+	for (i = Template.AbilityTargetConditions.Length - 1; i >= 0; i--)
+	{
+		if (Template.AbilityTargetConditions[i].isA(EffectName))
+		{
+			Template.AbilityTargetConditions.Remove(i, 1);
+		}
+	}
+}
 static function UpdatePsiReanimation(X2AbilityTemplateManager AllAbilities)
  {
 	local X2AbilityTemplate                    CurrentAbility;
@@ -1344,15 +1496,30 @@ static function UpdateReload(X2AbilityTemplateManager AllAbilities)
 
 static function UpdateSelfDestruct(X2AbilityTemplateManager AllAbilities)
 {
-   local X2AbilityTemplate	CurrentAbility;
+   local X2AbilityTemplate	Template;
    local X2Condition_UnitProperty	UnitPropertyCondition;
-
-   CurrentAbility = AllAbilities.FindAbilityTemplate('EngageSelfDestruct');
+	local X2Effect_PersistentStatChange PersistentStatChangeEffect;
+   Template = AllAbilities.FindAbilityTemplate('EngageSelfDestruct');
    UnitPropertyCondition = new class'X2Condition_UnitProperty';
    UnitPropertyCondition.ExcludeFriendlyToSource = false;
    UnitPropertyCondition.ExcludeFullHealth = true;
    UnitPropertyCondition.FailOnNonUnits = true;
-   CurrentAbility.AbilityTargetConditions.AddItem(UnitPropertyCondition);
+   Template.AbilityTargetConditions.AddItem(UnitPropertyCondition);
+
+   PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+   PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+   PersistentStatChangeEffect.EffectName = 'AndroidSelfDestructArmor';
+   PersistentStatChangeEffect.AddPersistentStatChange(eStat_ArmorMitigation, 2);
+   PersistentStatChangeEffect.AddPersistentStatChange(eStat_Offense, 15);
+   PersistentStatChangeEffect.AddPersistentStatChange(eStat_CritChance, 15);
+   PersistentStatChangeEffect.AddPersistentStatChange(eStat_Mobility, 2);
+
+   Template.AddTargetEffect(PersistentStatChangeEffect);
+
+   MakeFreeAction(Template);
+
+
+
 }
 
 static function UpdateCoress(X2AbilityTemplateManager AllAbilities)
@@ -1405,8 +1572,13 @@ static function UpdateSubservienceSacrifice(X2AbilityTemplateManager AllAbilitie
 	//Template.AddTargetEffect(FlayDamageEffect);
 }
 
-static function RemoveTheDeathFromHolyWarriorDeath(X2AbilityTemplate Template)
+static function RemoveTheDeathFromHolyWarriorDeath()
 {
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	Template = AllAbilities.FindAbilityTemplate('HolyWarriorDeath');
+
 	RemoveAbilityMultiTargetEffects(Template, 'X2Effect_HolyWarriorDeath');
 }
 
@@ -1584,6 +1756,7 @@ static function UpdateHailOfBullets()
 	ToHitCalc.bGuaranteedHit = true;
 	ToHitCalc.bAllowCrit = true;
 	ToHitCalc.bHitsAreCrits = true;
+	ToHitCalc.BuiltInCritMod = 150;
 	Template.AbilityToHitCalc = ToHitCalc;
 	Template.AbilityToHitOwnerOnMissCalc = ToHitCalc;
 
@@ -1597,17 +1770,66 @@ static function UpdateHailOfBullets()
 	Template.AbilityCosts.AddItem(ChargeCost);
 }
 
+static function UpdateGunslingerBreach()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2AbilityToHitCalc_StandardAim ToHitCalc;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	Template = AllAbilities.FindAbilityTemplate('BreachGunslingerAbility');
+
+	ToHitCalc = new class'X2AbilityToHitCalc_StandardAim';
+	ToHitCalc.bAllowCrit = true;
+	ToHitCalc.bHitsAreCrits = true;
+	ToHitCalc.BuiltInHitMod = -15;
+	ToHitCalc.BuiltInCritMod = 150;
+	Template.AbilityToHitCalc = ToHitCalc;
+	Template.AbilityToHitOwnerOnMissCalc = ToHitCalc;
+
+}
+
+
+
 static function UpdateKineticArmor()
 {
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2Effect_ModifyTemplarFocus FocusEffect;
+	local X2Condition_UnitEffectsOnSource SourceHasResonanceFieldCondition, SourceMissingResonanceFieldCondition;
+	local X2Effect_KineticShield_LW	KineticShieldEffect, ResonanceFieldEffect;
+
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('KineticArmor');
 
+
+	RemoveAbilityTargetEffects(Template,'X2Effect_KineticShield');
+
+	KineticShieldEffect = new class'X2Effect_KineticShield_LW';
+	KineticShieldEffect.BuildPersistentEffect(1, false, false, false, eWatchRule_RoomCleared);
+	KineticShieldEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, class'X2Ability_Warden'.default.str_KineticArmorTargetDesc, Template.IconImage, true, , Template.AbilitySourceName);
+	KineticShieldEffect.bDisplayInSpecialDamageMessageUI = true;
+	KineticShieldEffect.bRemoveWhenTargetDies = true;
+	KineticShieldEffect.bRemoveWhenTargetUnconscious = true;
+	SourceMissingResonanceFieldCondition = new class'X2Condition_UnitEffectsOnSource';
+	SourceMissingResonanceFieldCondition.AddExcludeEffect('ResonanceField', 'AA_MissingRequiredEffect');
+	KineticShieldEffect.TargetConditions.AddItem(SourceMissingResonanceFieldCondition);
+	Template.AddTargetEffect(KineticShieldEffect);
+
+	// Apply the Kinetic armor effect WITH aim bonus to the target
+	ResonanceFieldEffect = new class'X2Effect_KineticShield_LW';
+	ResonanceFieldEffect.EffectName = class'X2Effect_KineticShield'.default.ResonanceEffectName;
+	ResonanceFieldEffect.BuildPersistentEffect(1, false, false, false, eWatchRule_RoomCleared);
+	ResonanceFieldEffect.AddPersistentStatChange(eStat_Offense, class'X2Ability_Warden'.default.RESONANCEFIELD_AIMBONUS);
+	ResonanceFieldEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, class'X2Ability_Warden'.default.str_ResonanceFieldTargetDesc, Template.IconImage, true, , Template.AbilitySourceName);
+	ResonanceFieldEffect.bDisplayInSpecialDamageMessageUI = true;
+	SourceHasResonanceFieldCondition = new class'X2Condition_UnitEffectsOnSource';
+	SourceHasResonanceFieldCondition.AddRequireEffect('ResonanceField', 'AA_MissingRequiredEffect');
+	ResonanceFieldEffect.TargetConditions.AddItem(SourceHasResonanceFieldCondition);
+	Template.AddTargetEffect(ResonanceFieldEffect);
+
 	FocusEffect = new class'X2Effect_ModifyTemplarFocus';
 	FocusEffect.ModifyFocus = 1;
-	Template.AddTargetEffect(FocusEffect);
+	Template.AddShooterEffect(FocusEffect);
 	
 	Template.AbilityCooldown = CreateCooldown(2);
 }
@@ -1704,7 +1926,7 @@ static function UpdateExtraPadding()
 
 	Template = AllAbilities.FindAbilityTemplate('ExtraPaddingBonus');
 	CritDefEffect = new class'X2Effect_Resilience';
-	CritDefEffect.CritDef_Bonus = 20;
+	CritDefEffect.CritDef_Bonus = 15;
 	CritDefEffect.BuildPersistentEffect (1, true, false, false);
 	Template.AddTargetEffect(CritDefEffect);
 
@@ -1771,7 +1993,203 @@ static function UpdateInfiltratorWeave()
 	DamageImmunity.BuildPersistentEffect(1, true, false, false);
 }
 
+static function UpdateVentilate()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Condition_UnitProperty				UnitCondition;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
+	Template = AllAbilities.FindAbilityTemplate('Ventilate');
+	UnitCondition = new class 'X2Condition_UnitProperty';
+	UnitCondition.ExcludeStunned          = false;
+	UnitCondition.ExcludeFriendlyToSource = true;
+	UnitCondition.ExcludePanicked         = false;
+	UnitCondition.ExcludeInStasis         = true;
+	UnitCondition.ExcludeTurret           = false;
+	UnitCondition.ExcludeDazed            = false;
+	UnitCondition.ExcludeRobotic          = false;
+	UnitCondition.ExcludeDead             = true;
+	UnitCondition.ExcludeHostileToSource  = false;
+	UnitCondition.RequireSquadmates       = false;
+	UnitCondition.FailOnNonUnits          = true;   
+	UnitCondition.RequireWithinRange      = true;
+	UnitCondition.WithinRange             = 576; // 8 tiles (96*8)
+	Template.AbilityTargetConditions.AddItem(UnitCondition);
+
+}
+
+
+static function UpdateHackRobot()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_Stunned	StunEffect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('HackRobot');
+
+	RemoveAbilityTargetEffects(Template, 'X2Effect_MindControl');
+	RemoveAbilityTargetEffects(Template, 'X2Effect_RemoveEffects');
+
+
+	StunEffect = class'X2StatusEffects'.static.CreateStunnedStatusEffect(2, 100, false);
+	StunEffect.SetDisplayInfo(ePerkBuff_Penalty, class'X2StatusEffects'.default.RoboticStunnedFriendlyName, class'X2StatusEffects'.default.RoboticStunnedFriendlyDesc, "img:///UILibrary_PerkIcons.UIPerk_stun");
+
+	Template.AddTargetEffect(StunEffect);
+}
+
+static function UpdateReaper()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_Reaper_LW	ReaperEffect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('Reaper');
+
+	RemoveAbilityTargetEffects(Template, 'X2Effect_Reaper');
+
+	ReaperEffect = new class'X2Effect_Reaper_LW';
+	ReaperEffect.BuildPersistentEffect(1, false, true, false, eWatchRule_AnyTurnEnd);
+	ReaperEffect.SetDisplayInfo(ePerkBuff_Bonus, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, true, , Template.AbilitySourceName);
+	Template.AddTargetEffect(ReaperEffect);
+
+}
+
+static function UpdateTracerRounds()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_TracerRounds_LW	Effect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('TracerRounds');
+
+	RemoveAbilityShooterEffects(Template, 'X2Effect_TracerRounds');
+
+	Effect = new class'X2Effect_TracerRounds_LW';
+	Effect.BuildPersistentEffect(1, true, false, false);
+	Effect.SetDisplayInfo(ePerkBuff_Bonus, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, false);
+	Template.AddShooterEffect(Effect);
+
+}
+
+static function UpdateSustainEffect()
+{
+	local X2Effect_SustainingSphere_LW SustainEffect;
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('SustainingSphereAbility');
+
+	RemoveAbilityTargetEffects(Template,'X2Effect_SustainingSphere');
+
+	SustainEffect = new class'X2Effect_SustainingSphere_LW';
+	SustainEffect.BuildPersistentEffect(1, true, true);
+	SustainEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,, Template.AbilitySourceName);
+	Template.AddTargetEffect(SustainEffect);
+}
+
+static function UpdateWrithe()
+{
+	local X2Effect_ApplyMedikitHeal_LW MedikitHeal;
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('Writhe');
+
+	RemoveAbilityShooterEffects(Template,'X2Effect_ApplyMedikitHeal');
+
+	MedikitHeal = new class'X2Effect_ApplyMedikitHeal_LW';
+	MedikitHeal.PerUseHP = class'X2Ability_Progeny'.default.WRITHE_SHOOTER_HEALHP;
+	MedikitHeal.Act2PerUseHPBonus = 2;
+	MedikitHeal.Act3PerUseHPBonus = 4;
+	Template.AddShooterEffect(MedikitHeal);	
+}
+	
+static function UpdateRiotBash()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect TargetEffect;
+	local X2Effect_ApplyWeaponDamage DamageEffect;
+
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('RiotBash');
+
+	MakeNonTurnEnding(Template);
+	foreach Template.AbilityTargetEffects(TargetEffect)
+	{
+		DamageEffect = X2Effect_ApplyWeaponDamage(TargetEffect);
+		if (DamageEffect != None)
+		{
+			DamageEffect.EffectDamageValue.Pierce = 0;
+			DamageEffect.EffectDamageValue.Damage = 2;
+
+			DamageEffect.Act2DamageBonus = 1;
+			DamageEffect.Act2DamageBonus = 2;
+			
+		}
+	}
+
+}
+
+static function UpdateCombatProtocol()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect Effect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('CombatProtocol');
+	MakeNonTurnEnding(Template);
+	foreach Template.AbilityTargetEffects(Effect)
+	{
+		if(Effect.IsA('X2Effect_Stunned'))
+		{
+			X2Effect_Stunned(Effect).ApplyChance = 50;
+		}
+	}
+
+	foreach Template.AbilityMultiTargetEffects(Effect)
+	{
+		if(Effect.IsA('X2Effect_Stunned'))
+		{
+			X2Effect_Stunned(Effect).ApplyChance = 50;
+		}
+	}
+
+}
+
+
+
+static function UpdateRageSmash()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Condition_UnitProperty	UnitCondition;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('BreakerRageAttack');
+
+	RemoveAbilityTargetConditions(Template, 'X2Condition_UnitProperty');
+
+	UnitCondition = new class 'X2Condition_UnitProperty';
+	UnitCondition.ExcludeAlive = false;
+	UnitCondition.ExcludeDead=true;
+	UnitCondition.ExcludeFriendlyToSource=false;
+	UnitCondition.ExcludeHostileToSource=false;
+	UnitCondition.TreatMindControlledSquadmateAsHostile=true;
+	UnitCondition.ExcludeUnBreached=true;
+
+	Template.AbilityTargetConditions.AddItem(UnitCondition);
+}
+
+ 
 
 
 

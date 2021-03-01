@@ -34,8 +34,11 @@ var config int RESILIENCE_CRITDEF_BONUS;
 var config int DAMAGE_CONTROL_DURATION;
 var config int DAMAGE_CONTROL_BONUS_ARMOR;
 
-var config int MELEE_TIER_2_DAMAGE_BONUS;
-var config int MELEE_TIER_3_DAMAGE_BONUS;
+var config int BREAKER_TIER_2_DAMAGE_BONUS;
+var config int BREAKER_TIER_3_DAMAGE_BONUS;
+
+var config int WARDEN_TIER_2_DAMAGE_BONUS;
+var config int WARDEN_TIER_3_DAMAGE_BONUS;
 
 var config int SMG_MOBILITY_BONUS;
 var config int SHOTGUN_MOBILITY_PENALTY;
@@ -47,6 +50,12 @@ var config int REACTION_FIRE_ANTI_COVER_BONUS;
 var config int EXTRA_HELLWEAVE_HP_BONUS;
 
 var config int EXTRA_HAZMAT_HP_BONUS;
+
+var config int EXTRA_ADRENAL_HP_BONUS;
+
+var config int MOVING_TARGET_DEFENSE;
+var config int MOVING_TARGET_DODGE;
+
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
 var localized string RageTriggeredFriendlyDesc;
@@ -110,7 +119,8 @@ static function array<X2DataTemplate> CreateTemplates()
 
 	Templates.AddItem(AddHitandSlitherAbility());
 	
-	Templates.AddItem(CreateSecondaryMeleeBuff());
+	Templates.AddItem(CreateSecondaryMeleeBuff('BreakerBonus', default.BREAKER_TIER_2_DAMAGE_BONUS, default.BREAKER_TIER_3_DAMAGE_BONUS));
+	Templates.AddItem(CreateSecondaryMeleeBuff('WardenBonus', default.WARDEN_TIER_2_DAMAGE_BONUS, default.WARDEN_TIER_3_DAMAGE_BONUS));
 
 	Templates.AddItem(AddSMGBonusAbility());
 	Templates.AddItem(AddShotgunPenaltyAbility());
@@ -119,7 +129,9 @@ static function array<X2DataTemplate> CreateTemplates()
 
 	Templates.AddItem(AddExtraHellWeaveHP());
 	Templates.AddItem(AddExtraHazmatHP());
+	Templates.AddItem(AddExtraAdrenalHP());
 
+	
 	Templates.AddItem(NewFluxWeaveAbility());
 	Templates.AddItem(CreateSustainingShield());
 
@@ -129,7 +141,25 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(class'X2Ability_Chosen'.static.CreateMeleeImmunity());
 
 	Templates.AddItem(class'X2Ability_Chosen'.static.ChosenSoulstealer());
+	Templates.AddItem(class'X2Ability_Chosen'.static.ChosenSoulstealer());
+	Templates.AddItem(class'X2Ability_Chosen'.static.CreateChosenRegenerate());
+
 	
+	Templates.AddItem(OverrideLR('LightningReflexes'));
+	Templates.AddItem(OverrideLR('AdrenalWeave_LightningReflexes'));
+	Templates.AddItem(OverrideLR('DarkEventAbility_LightningReflexes'));
+
+	Templates.AddItem(CreateWeaponUpgradeCritBonus('EnhancedSMGCrit',class'X2Item_RebalancedWeapons'.default.ENHANCED_SMG_CRIT_BONUS));
+	Templates.AddItem(CreateWeaponUpgradeCritBonus('MasterShotgunCrit',class'X2Item_RebalancedWeapons'.default.MASTER_SHOTGUN_CRIT_BONUS));
+	Templates.AddItem(CreateWeaponUpgradeCritBonus('EnhancedPistolCrit',class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_CRIT_BONUS));
+
+	Templates.AddItem(NewBreakerFocus());
+
+
+	Templates.AddItem(CreateCallForAndroidReinforcements());
+	
+	//Templates.AddItem(OverrideDELR());
+
 	return Templates;
 }
 
@@ -973,6 +1003,8 @@ static function X2AbilityTemplate AddWhirlwind()
 	MobilityIncrease.AddPersistentStatChange(eStat_Mobility, default.WHIRLWIND_MOBILITY_MOD, MODOP_Multiplication);
 	Template.AddShooterEffect(MobilityIncrease);
 
+	Template.AdditionalAbilities.AddItem('WhirlwindPassive');
+
 	Template.DefaultSourceItemSlot = eInvSlot_SecondaryWeapon;
 
 	return Template;
@@ -1515,17 +1547,17 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 }
 
 
-	static function X2AbilityTemplate CreateSecondaryMeleeBuff()
+	static function X2AbilityTemplate CreateSecondaryMeleeBuff(name TemplateName, int Tier2Bonus, int Tier3Bonus)
 {
 	local X2AbilityTemplate                 Template;
 	local X2Effect_SecondaryMeleeBonus				MeleeBuffsEffect;
 
 	MeleeBuffsEffect = new class'X2Effect_SecondaryMeleeBonus';
     MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
-    MeleeBuffsEffect.MeleeDamageBonusTier2 = default.MELEE_TIER_2_DAMAGE_BONUS;
-    MeleeBuffsEffect.MeleeDamageBonusTier3 = default.MELEE_TIER_3_DAMAGE_BONUS;
+    MeleeBuffsEffect.MeleeDamageBonusTier2 = Tier2Bonus;
+    MeleeBuffsEffect.MeleeDamageBonusTier3 = Tier3Bonus;
 
-	Template = Passive('SecondaryMeleeDMGIncrease', "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template = Passive(TemplateName, "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
 	Template.bDontDisplayInAbilitySummary = true;
 
 	return Template;
@@ -1773,16 +1805,283 @@ static function X2AbilityTemplate AddCritDamageWeaponBonus()
 	return Template;
 }
 
-/*
+
+static function X2AbilityTemplate OverrideLR(name TemplateName)
+{
+	local X2AbilityTemplate                 Template;	
+	local X2Effect_LightningReflexes_LW		PersistentEffect;
+	local X2Condition_GameplayTag GameplayCondition;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, TemplateName);
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_lightningreflexes";
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	Template.bIsPassive = true;
+	PersistentEffect = new class'X2Effect_LightningReflexes_LW';
+	PersistentEffect.BuildPersistentEffect(1, true, false);
+	PersistentEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,, Template.AbilitySourceName);
+	Template.AddTargetEffect(PersistentEffect);
+
+	if(TemplateName == 'DarkEventAbility_LightningReflexes')
+	{
+		GameplayCondition = new class'X2Condition_GameplayTag';
+		GameplayCondition.RequiredGameplayTag = 'DarkEvent_LightningReflexes';
+		Template.AbilityShooterConditions.AddItem(GameplayCondition);
+	}
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.bCrossClassEligible = true;
+	return Template;
+}
+
+static function X2AbilityTemplate AddExtraAdrenalHP()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PersistentStatChange		PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'AdrenalHPBonus');
+	Template.IconImage = "img:///UILibrary_Common.ArmorMod_ExtraPadding";
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	// Bonus to health stat Effect
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false, , Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_HP, default.EXTRA_ADRENAL_HP_BONUS);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+static function X2AbilityTemplate CreateWeaponUpgradeCritBonus(name Templatename, int CritBonus)
+{
+	local XMBEffect_ConditionalBonus Effect;
+	local X2AbilityTemplate Template;
+	// Create a conditional bonus
+	Effect = new class'XMBEffect_ConditionalBonus';
+
+	// The bonus adds the aim and crit chance
+	Effect.AddToHitModifier(CritBonus, eHit_Crit);
+
+	Effect.AbilityTargetConditions.AddItem(default.MatchingWeaponCondition);
+
+	// Create the template using a helper function
+	Template = Passive(Templatename, "img:///UILibrary_FavidsPerkPack.Perk_Ph_Predator", true, Effect);
+
+	Effect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.LocLongDescription, Template.IconImage, false,,Template.AbilitySourceName);
+
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
+
+
+static function X2AbilityTemplate NewBreakerFocus() 
+{
+	local X2AbilityTemplate		Template;
+	local X2Effect_TemplarFocus	FocusEffect;
+	local array<StatChange>		StatChanges;
+	local StatChange			NewStatChange;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'BreakerFocus');
+
+	Template.IconImage = class'UIUtilities'.static.GetAbilityIconPath('MutonRage');
+	Template.AbilitySourceName = 'eAbilitySource_Psionic';
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bIsPassive = true;
+	Template.bFeatureInCharacterUnlock = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	FocusEffect = new class'X2Effect_TemplarFocus';
+	FocusEffect.BuildPersistentEffect(1, true, false);
+	FocusEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.LocLongDescription, Template.IconImage, false, , Template.AbilitySourceName);
+	FocusEffect.EffectSyncVisualizationFn = class'X2Ability_TemplarAbilitySet'.static.FocusEffectVisualization;
+	FocusEffect.VisualizationFn = class'X2Ability_TemplarAbilitySet'.static.FocusEffectVisualization;
+
+	//	Rage 0 Stack
+	StatChanges.Length = 0;
+	FocusEffect.AddNextFocusLevel(StatChanges, 0, 0);
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+	//	Rage 1 Stack
+   ///////////////////////////////////////////////////////////////////////////////////////
+	StatChanges.Length = 0;
+   // Trade Offense and Dodge
+	NewStatChange.StatType = eStat_Offense;
+	NewStatChange.StatAmount = 5; // 15
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Defense;
+	NewStatChange.StatAmount = -7; // 15
+	StatChanges.AddItem(NewStatChange);
+   // Trade Defense and Crit Chance
+	NewStatChange.StatType = eStat_CritChance;
+	NewStatChange.StatAmount = 10; // 5
+	StatChanges.AddItem(NewStatChange);
+   // Trade Strength and Willpower
+	NewStatChange.StatType = eStat_Will;
+	NewStatChange.StatAmount = -10;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Strength;
+	NewStatChange.StatAmount = 10;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Mobility;
+	NewStatChange.StatAmount = 1;
+	StatChanges.AddItem(NewStatChange);
+	FocusEffect.AddNextFocusLevel(StatChanges, 0, 0);
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+	//	Rage 2 Stack
+   ///////////////////////////////////////////////////////////////////////////////////////
+	StatChanges.Length = 0;
+   // Trade Offense and Dodge
+	NewStatChange.StatType = eStat_Offense;
+	NewStatChange.StatAmount = 10; // 15
+	StatChanges.AddItem(NewStatChange);
+   // Trade Defense and Crit Chance
+	NewStatChange.StatType = eStat_CritChance;
+	NewStatChange.StatAmount = 20; // 5
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Defense;
+	NewStatChange.StatAmount = -14; // -5
+	StatChanges.AddItem(NewStatChange);
+   // Trade Strength and Willpower
+	NewStatChange.StatType = eStat_Will;
+	NewStatChange.StatAmount = -20;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Strength;
+	NewStatChange.StatAmount = 20;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Mobility;
+	NewStatChange.StatAmount = 2;
+	StatChanges.AddItem(NewStatChange);
+	FocusEffect.AddNextFocusLevel(StatChanges, 0, 0);
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+	//	Rage 3 Stack
+   ///////////////////////////////////////////////////////////////////////////////////////
+	StatChanges.Length = 0;
+   // Trade Offense and Dodge
+	NewStatChange.StatType = eStat_Offense;
+	NewStatChange.StatAmount = 15; // 15
+	StatChanges.AddItem(NewStatChange);
+   // Trade Defense and Crit Chance
+	NewStatChange.StatType = eStat_CritChance;
+	NewStatChange.StatAmount = 30; // 5
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Defense;
+	NewStatChange.StatAmount = -21; // -5
+	StatChanges.AddItem(NewStatChange);
+   // Trade Strength and Willpower
+	NewStatChange.StatType = eStat_Will;
+	NewStatChange.StatAmount = -30;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Strength;
+	NewStatChange.StatAmount = 30;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Mobility;
+	NewStatChange.StatAmount = 3;
+	StatChanges.AddItem(NewStatChange);
+	FocusEffect.AddNextFocusLevel(StatChanges, 0, 0);
+
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+	//	Rage 4 Stack
+   ///////////////////////////////////////////////////////////////////////////////////////
+	StatChanges.Length = 0;
+   // Trade Offense and Dodge
+	NewStatChange.StatType = eStat_Offense;
+	NewStatChange.StatAmount = 20; // 15
+	StatChanges.AddItem(NewStatChange);
+
+	NewStatChange.StatType = eStat_CritChance;
+	NewStatChange.StatAmount = 40; // 5
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Defense;
+	NewStatChange.StatAmount = -28; // -5
+	StatChanges.AddItem(NewStatChange);
+   // Trade Strength and Willpower
+	NewStatChange.StatType = eStat_Will;
+	NewStatChange.StatAmount = -40;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Strength;
+	NewStatChange.StatAmount = 40;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Mobility;
+	NewStatChange.StatAmount = 4;
+	StatChanges.AddItem(NewStatChange);
+	FocusEffect.AddNextFocusLevel(StatChanges, 0, 0);
+
+   ///////////////////////////////////////////////////////////////////////////////////////
+	//	Rage 5 Stack
+   ///////////////////////////////////////////////////////////////////////////////////////
+	StatChanges.Length = 0;
+   // Trade Offense and Dodge
+	NewStatChange.StatType = eStat_Offense;
+	NewStatChange.StatAmount = 25; // 15
+	StatChanges.AddItem(NewStatChange);
+   // Trade Defense and Crit Chance
+	NewStatChange.StatType = eStat_CritChance;
+	NewStatChange.StatAmount = 50; // 5
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Defense;
+	NewStatChange.StatAmount = -35; // -5
+	StatChanges.AddItem(NewStatChange);
+   // Trade Strength and Willpower
+	NewStatChange.StatType = eStat_Will;
+	NewStatChange.StatAmount = -30;
+	StatChanges.AddItem(NewStatChange);
+	NewStatChange.StatType = eStat_Strength;
+	NewStatChange.StatAmount = 50;
+	StatChanges.AddItem(NewStatChange);
+   // Bonus Mobility
+	NewStatChange.StatType = eStat_Mobility;
+	NewStatChange.StatAmount = 5;
+	StatChanges.AddItem(NewStatChange);
+	FocusEffect.AddNextFocusLevel(StatChanges, 0, 0);
+
+	Template.AddTargetEffect(FocusEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+	Template.bSkipFireAction = true;
+
+	Template.AdditionalAbilities.AddItem('BreakerAddFocusOnDamage');
+	//Template.AdditionalAbilities.AddItem('BreakerRefreshFocus');
+	Template.AdditionalAbilities.AddItem('Focus_Refresh');
+	Template.AdditionalAbilities.AddItem('MutonRageBerserk');
+
+	return Template;
+}
+
+
 static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 {
 	local X2AbilityTemplate                 Template;
-	local X2Condition_UnitEffects           UnitEffectsCondition;
 	local X2AbilityCost_ActionPoints        ActionPointCost;
-	local X2Condition_Reinforcement			ReinforcementCondition;
-	local X2AbilityCooldown_Global			Cooldown;
 	local X2Condition_UnitEffects			UnitEffects;
-
+	local X2Condition_AndroidReinforcements RNFCondition;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'XComCallForAndroidReinforcements');
 
@@ -1792,9 +2091,8 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 	//Costs
 	ActionPointCost = new class'X2AbilityCost_ActionPoints';
 	ActionPointCost.iNumPoints = 1;
-	ActionPointCost.bConsumeAllPoints = false;
+	ActionPointCost.bConsumeAllPoints = true;
 	Template.AbilityCosts.AddItem(ActionPointCost);
-	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
 
 	//Targeting
 	Template.AbilityToHitCalc = default.DeadEye;
@@ -1805,16 +2103,13 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 
 	Template.AbilityTargetStyle = default.SelfTarget;
 
-	UnitEffectsCondition = new class'X2Condition_UnitEffects';
-	UnitEffectsCondition.AddExcludeEffect(class'X2Effect_PendingReinforcements'.Default.EffectName, 'AA_DuplicateEffectIgnored');
-	Template.AbilityShooterConditions.AddItem(UnitEffectsCondition);
 
 	UnitEffects = new class'X2Condition_UnitEffects';
 	UnitEffects.AddExcludeEffect('MindControl', 'AA_UnitIsMindControlled');
 	Template.AbilityShooterConditions.AddItem(UnitEffects);
 
 	Template.BuildNewGameStateFn = AndroidReinforcement_BuildGameState; // TypicalAbility_BuildGameState;
-	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+	Template.BuildVisualizationFn = CallInXComAndroidReinforcementVisualization;
 	Template.bShowActivation = true;
 	Template.bSkipFireAction = true;
 
@@ -1826,44 +2121,142 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 
 	//Template.CustomFireAnim = 'NO_CallReinforcements';
 
-	Cooldown = new class'X2AbilityCooldown_Global';
-	Cooldown.iNumTurns = 2;
-	Template.AbilityCooldown = Cooldown;
+	
+	RNFCondition = new class'X2Condition_AndroidReinforcements';
+	Template.AbilityShooterConditions.AddItem(RNFCondition);
 
+
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
 	return Template;
 }
 
+
 static function XComGameState AndroidReinforcement_BuildGameState(XComGameStateContext Context)
 {
+	local XComGameStateHistory		History;
+	local StateObjectReference		AndroidRef,AbilityRef;
+	local XComGameState_BattleData	BattleData;
+	local int						AvaliableAndroidCount;
+	local XComGameState_Unit		AndroidState;
+	local XComGameState_Ability		AbilityState;
+	local XComGameState_MissionSite MissionSiteState;
+	local XComGameState_StrategyAction_Mission MissionAction;
 	local XComGameState NewGameState;
-	local XComGameState_BattleData BattleData;
+	local XComGameState_BreachData BreachDataState;
+	local TTile TargetTile;
+	local X2Effect_GroupTimelineMove GroupMoveEffect;
+	local BreachPointInfo PointInfo;
+	local EffectAppliedData ApplyData;
+	//local array<StateObjectReference> AvailableAndroidReferences;
+
+
+
+	BreachDataState = XComGameState_BreachData(`XCOMHISTORY.GetSingleGameStateObjectForClass(class'XComGameState_BreachData'));
+
+	//Spawn the android at first breach point
 	NewGameState = TypicalAbility_BuildGameState(Context);
 
-	BattleData = XComGameState_BattleData(History.GetSingleGameStateObjectForClass(class'XComGameState_BattleData'));
+	History = `XCOMHISTORY;
 
-	StartingAndroidReserves
-	class'XComGameState_AIReinforcementSpawner'.static.InitiateReinforcements(
-		'',
-		2, //OverrideCountdown, 
-		, //bUseOverrideTargetLocation, 
-		, //OverrideTargetLocation, 
-		, //IdealSpawnTilesOffset, 
-		NewGameState,
-		,
-		'', //VisualizationType, 
-		, //bDontSpawnInXComLOS, 
-		, //bMustSpawnInXComLOS,
-		, //bDontSpawnInHazards,
-		true, //bForceScamper,
-		, //bAlwaysOrientAlongLOP,
-		,
-		true, //bUseSpawnPoints,
-		, //SpawnPointsGroupTag
-	);
+	BattleData = XComGameState_BattleData(History.GetSingleGameStateObjectForClass(class'XComGameState_BattleData', false));
+	BattleData = XComGameState_BattleData(NewGameState.ModifyStateObject(class'XComGameState_BattleData', BattleData.ObjectID));
 
+	MissionSiteState = XComGameState_MissionSite(History.GetGameStateForObjectID(BattleData.m_iMissionID));
+	MissionAction = MissionSiteState.GetMissionAction();
+
+	AvaliableAndroidCount = BattleData.StartingAndroidReserves.length - BattleData.SpentAndroidReserves.length;
+
+	if(AvaliableAndroidCount > 0)
+	{	//Grab the first available android;
+		foreach BattleData.StartingAndroidReserves(AndroidRef)
+		{
+			if(BattleData.SpentAndroidReserves.find('ObjectID',AndroidRef.ObjectID) == INDEX_NONE)
+			{
+				break;
+			}
+		}
+			AndroidState = XComGameState_Unit(History.GetGameStateForObjectID(AndroidRef.ObjectID));
+			AndroidState = XComGameState_Unit(NewGameState.ModifyStateObject(class'XComGameState_Unit', AndroidState.ObjectID));
+
+			AndroidState.ClearRemovedFromPlayFlag();
+			AndroidState.bCanTraverseRooms = true;
+
+			//TargetTile = `XWORLD.GetTileCoordinatesFromPosition(BreachDataState.CachedBreachPointInfos[0].BreachPointLocation);
+
+			foreach BreachDataState.CachedBreachPointInfos (PointInfo)
+			{
+				break;	
+			}
+			`XWORLD.GetFloorTileForPosition(PointInfo.BreachPointLocation, TargetTile);
+			AndroidState.SetVisibilityLocation(TargetTile);
+
+			AndroidState.ActionPoints.Length = 0;
+			/*
+			for (i = 0; i < NumActionPoints; ++i)
+			{
+				AndroidState.ActionPoints.AddItem(class'X2CharacterTemplateManager'.default.StandardActionPoint);
+			}
+				*/
+			GroupMoveEffect = new class 'X2Effect_GroupTimelineMove';
+			GroupMoveEffect.BuildPersistentEffect(1, false, true, false, eWatchRule_UnitTurnEnd);
+			GroupMoveEffect.bMoveRelativeToCurrentGroup = true;
+			GroupMoveEffect.NumberOfRelativePlacesToMove = 1;
+			GroupMoveEffect.bApplyMoveOnEffectAdded = true;
+
+			ApplyData.SourceStateObjectRef = AndroidState.GetReference();
+			ApplyData.TargetStateObjectRef = AndroidState.GetReference();
+			GroupMoveEffect.ApplyEffect(ApplyData, AndroidState, NewGameState);
+
+
+
+			// init & register for UnitPostBeginPlayTrigger 
+			foreach AndroidState.Abilities(AbilityRef)
+			{
+				AbilityState = XComGameState_Ability(History.GetGameStateForObjectID(AbilityRef.ObjectID));
+				AbilityState.CheckForPostBeginPlayActivation(NewGameState);
+			}
+
+			// lot of systems expect XCOM units to be in the AssignedUnitRefs array
+			MissionAction.AssignUnit(NewGameState, AndroidRef);
+
+			BattleData.SpentAndroidReserves.AddItem(AndroidRef);
+
+			// init & register for unit specific events
+			AndroidState.OnBeginTacticalPlay(NewGameState);
+
+		//`XEVENTMGR.TriggerEvent('RequestXComAndroidReinforcement', self, BattleData, NewGameState);
+	}
 	return NewGameState;
 }
-*/
+
+static function CallInXComAndroidReinforcementVisualization(XComGameState VisualizeGameState)
+{
+	local VisualizationActionMetadata ActionMetadata;
+	local XComGameState_Unit UnitState;
+	local XComGameStateHistory History;
+	local X2Action_UpdateUI UpdateUIAction;
+
+	History = `XCOMHISTORY;
+	TypicalAbility_BuildVisualization(VisualizeGameState);
+
+
+	foreach VisualizeGameState.IterateByClassType(class'XComGameState_Unit', UnitState)
+	{
+		ActionMetadata.StateObject_OldState = History.GetGameStateForObjectID(UnitState.ObjectID, eReturnType_Reference, VisualizeGameState.HistoryIndex - 1);
+		ActionMetadata.StateObject_NewState = VisualizeGameState.GetGameStateForObjectID(UnitState.ObjectID);
+		ActionMetadata.VisualizeActor = History.GetVisualizer(UnitState.ObjectID);
+
+		class'X2Action_SyncVisualizer'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext());
+	}
+	
+		UpdateUIAction = X2Action_UpdateUI(class'X2Action_UpdateUI'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
+		UpdateUIAction.SpecificID = ActionMetadata.StateObject_NewState.ObjectID;
+		UpdateUIAction.UpdateType = EUIUT_GroupInitiative;
+	
+}
+
 defaultproperties
 {
 	VampUnitValue="VampAmount"
