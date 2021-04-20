@@ -141,9 +141,8 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('TargetingSystem');
 	CurrentAbility.AbilityCooldown = CreateCooldown(1);
  
-	CurrentAbility = AllAbilities.FindAbilityTemplate('CloseCombatSpecialistShot');
-	CurrentAbility.AbilityCooldown = CreateCooldown(1);
 
+	UpdateCCS();
 	UpdateCombatProtocol();
 
 
@@ -217,8 +216,11 @@ static function UpdateAbilities()
 	CurrentAbility.bDisplayInUITacticalText = true;
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('PsiDisable');
+	MakeNonTurnEnding(CurrentAbility);
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('DominatorMindControl');
 	MakeFreeAction(CurrentAbility);
-	
+
 	UpdateSubservience(AllAbilities);
 
 
@@ -302,8 +304,8 @@ static function UpdateAbilities()
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('MeleeStrike');
-	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
-	
+	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = -10;
+	MakeNonTurnEnding(CurrentAbility);
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ScatterShot');
 	X2AbilityToHitCalc_StandardAim(CurrentAbility.AbilityToHitCalc).bAllowCrit = true;
 
@@ -337,7 +339,7 @@ static function UpdateAbilities()
 	UpdateVentilate();
 
 	UpdateWrithe();
-
+	UpdateMindFlay();
 }
 
 static function UpdateItems()
@@ -589,6 +591,56 @@ static function UpdateItems()
 
 					
 
+				case 'Android_Lidar1':
+					EquipmentTemplate.Abilities.RemoveItem('Android_Lidar1_Bonus');
+					EquipmentTemplate.Abilities.AddItem('CloseAndPersonal');
+					break;
+				case 'Android_Lidar2':
+				EquipmentTemplate.Abilities.RemoveItem('Android_Lidar2_Bonus');
+				EquipmentTemplate.Abilities.AddItem('Executioner_LW');
+
+				break;
+				case 'Android_GPU1':
+				EquipmentTemplate.Abilities.RemoveItem('Android_GPU1_Bonus');
+				EquipmentTemplate.Abilities.AddItem('PackMaster');
+				break;
+				case 'Android_GPU2':
+				EquipmentTemplate.Abilities.RemoveItem('Android_GPU2_Bonus');
+				EquipmentTemplate.Abilities.AddItem('ReturnFire');
+
+				break;
+				case 'Android_ASIC1':
+				EquipmentTemplate.Abilities.RemoveItem('Android_ASIC1_Bonus');
+				EquipmentTemplate.Abilities.AddItem('Reposition_LW');
+				break;
+
+				case 'Android_ASIC2':
+				EquipmentTemplate.Abilities.RemoveItem('Android_ASIC2_Bonus');
+				EquipmentTemplate.Abilities.AddItem('CloseEncounters');
+				break;
+				case 'Android_Lining1':
+				EquipmentTemplate.Abilities.RemoveItem('Android_Lining1_Bonus');
+				EquipmentTemplate.Abilities.AddItem('WillToSurvive');
+				break;
+				case 'Android_Lining2':
+				EquipmentTemplate.Abilities.RemoveItem('Android_Lining2_Bonus');
+				EquipmentTemplate.Abilities.AddItem('Brawler');
+				break;
+				case 'Android_Sheathing1':
+				EquipmentTemplate.Abilities.RemoveItem('Android_Sheathing1_Bonus_HP');
+				EquipmentTemplate.Abilities.RemoveItem('Android_Sheathing1_Bonus_Armor');
+				EquipmentTemplate.Abilities.AddItem('DamageControl');
+				break;
+				case 'Android_Sheathing2':
+				EquipmentTemplate.Abilities.RemoveItem('Android_Sheathing2_Bonus_Armor');
+				EquipmentTemplate.Abilities.AddItem('Resilience');
+				break;
+				case 'Android_Servo1':
+				break;
+				case 'Android_Servo2':
+				EquipmentTemplate.Abilities.RemoveItem('Android_Servo2_Bonus');
+				EquipmentTemplate.Abilities.AddItem('Predator_LW');
+				break;				
 				default:
 				break;					
 
@@ -723,6 +775,7 @@ static function UpdateCharacters()
 				break;
 			case 'GP_Leader':
 				CharTemplate.Abilities.AddItem('LightningReflexes');
+				CharTemplate.Abilities.AddItem('Avenger_LW');
 				break;
 				
 			case 'SC_Leader':
@@ -919,7 +972,7 @@ static function bool AbilityTagExpandHandler(string InString, out string OutStri
 		Outstring = string(int(class'X2Effect_ImpactCompensation'.default.IMPACT_COMPENSATION_PCT_DR * 100));
 		return true;
 	case 'WTS_COVER_DR_PCT':
-		Outstring = string(int(class'X2Effect_WillToSurvive'.default.WTS_COVER_DR_PCT));
+		Outstring = string(int(class'X2Effect_WillToSurvive'.default.WTS_COVER_DR_PCT * 100));
 		return true;
 	case 'RESILIENCE_BONUS_LW':
 		Outstring = string(class'X2Ability_XMBPerkAbilitySet'.default.RESILIENCE_CRITDEF_BONUS);
@@ -1534,10 +1587,16 @@ static function UpdateSubservience(X2AbilityTemplateManager AllAbilities)
 {
 	local X2AbilityTemplate                    Template;
 	local X2Effect_Subservience_LW ServeEffect;
+	local X2Condition_UnitEffects SubServienceCondition;
+
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('Subservience');
 	RemoveAbilityTargetEffects(Template,'X2Effect_Subservience');
 
+
+	SubServienceCondition = new class'X2Condition_UnitEffects';
+	SubServienceCondition.AddExcludeEffect('SubservienceEffect', 'AA_AbilityUnavailable');
+	Template.AbilityTargetConditions.AddItem(SubServienceCondition);
 
 	ServeEffect = new class'X2Effect_Subservience_LW';
 	ServeEffect.bRemoveWhenSourceDies = true;
@@ -1723,13 +1782,6 @@ static function UpdateCrowdControl()
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('CrowdControl');
 
-	Charges = new class'X2AbilityCharges';
-	Charges.InitialCharges = 1;
-	Template.AbilityCharges = Charges;
-
-	ChargeCost = new class'X2AbilityCost_Charges';
-	ChargeCost.NumCharges = 1;
-	Template.AbilityCosts.AddItem(ChargeCost);
 
 	foreach Template.AbilityMultiTargetEffects(Effect)
 	{
@@ -2189,7 +2241,35 @@ static function UpdateRageSmash()
 	Template.AbilityTargetConditions.AddItem(UnitCondition);
 }
 
- 
+static function UpdateCCS()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Condition_NotItsOwnTurn	NotItsOwnTurnCondition;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	
+	Template = AllAbilities.FindAbilityTemplate('CloseCombatSpecialistShot');
+	Template.AbilityCooldown = CreateCooldown(1);
+
+
+	NotItsOwnTurnCondition = new class'X2Condition_NotItsOwnTurn';
+	Template.AbilityShooterConditions.AddItem(NotItsOwnTurnCondition);
+
+}
+
+static function UpdateMindFlay()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	
+	Template = AllAbilities.FindAbilityTemplate('MindFlay');
+	Template.AbilityCooldown = CreateCooldown(2);
+	MakeNonTurnEnding(Template);
+	Template.AdditionalAbilities.AddItem('MindFlayBonusDamage');
+}
+	
 
 
 

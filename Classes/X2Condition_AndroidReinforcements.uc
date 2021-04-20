@@ -10,10 +10,25 @@ event name CallMeetsCondition(XComGameState_BaseObject kTarget)
     LivingUnitCount = 0;
     foreach `XCOMHISTORY.IterateByClassType(class'XComGameState_Unit', UnitState)
 	{
-		if (UnitState.IsAlive() && !UnitState.IsUnconscious() && !UnitState.IsUnitAffectedByEffectName(class'X2StatusEffects'.default.BleedingOutName) && !UnitState.bRemovedFromPlay
-            && UnitState.GetTeam() == eTeam_XCom && !UnitState.IsCivilian())
+        //split ifs for easier debugging
+		if (UnitState.IsAlive())
 		{
-			LivingUnitCount++;
+            if(!UnitState.IsUnconscious())
+            {
+                if(!UnitState.IsUnitAffectedByEffectName(class'X2StatusEffects'.default.BleedingOutName))
+                {
+                    if(UnitState.GetTeam() == eTeam_XCom)
+                    {
+                        if(!UnitState.IsCivilian())
+                        {
+                            if(!UnitState.bRemovedFromPlay)
+                            {
+                                LivingUnitCount++;
+                            }
+                        }
+                    }
+                }
+            }
 		}
 	}
     BattleData = XComGameState_BattleData(`XCOMHISTORY.GetSingleGameStateObjectForClass(class'XComGameState_BattleData', false));

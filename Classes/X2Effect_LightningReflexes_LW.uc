@@ -2,7 +2,7 @@ class X2Effect_LightningReflexes_LW extends X2Effect_Persistent config (GameData
 
 var config int LR_DEFENSE;
 var config int LR_DODGE;
-
+/*
 function RegisterForEvents(XComGameState_Effect EffectGameState)
 {
 	local X2EventManager EventMgr;
@@ -14,10 +14,10 @@ function RegisterForEvents(XComGameState_Effect EffectGameState)
 	EffectObj = EffectGameState;
 	UnitState = XComGameState_Unit(`XCOMHISTORY.GetGameStateForObjectID(EffectGameState.ApplyEffectParameters.SourceStateObjectRef.ObjectID));
 
-	EventMgr.RegisterForEvent(EffectObj, 'AbilityActivated', IncomingReactionFireCheck, ELD_OnStateSubmitted,,,, EffectObj);
-	EventMgr.RegisterForEvent(EffectObj, 'TriggerLRLWFlyover', EffectGameState.TriggerAbilityFlyover, ELD_OnStateSubmitted,, UnitState);
+	//EventMgr.RegisterForEvent(EffectObj, 'AbilityActivated', IncomingReactionFireCheck, ELD_OnStateSubmitted,,,, EffectObj);
+	//EventMgr.RegisterForEvent(EffectObj, 'TriggerLRLWFlyover', EffectGameState.TriggerAbilityFlyover, ELD_OnStateSubmitted,, UnitState);
 }
-
+*/
 static function EventListenerReturn IncomingReactionFireCheck(Object EventData, Object EventSource, XComGameState GameState, name EventID, Object CallbackData)
 {
 	local XComGameState_Unit			AttackingUnit, DefendingUnit;

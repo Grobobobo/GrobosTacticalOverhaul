@@ -25,19 +25,19 @@ static function X2AbilityTemplate AddNewRiotGuard()
 	ShooterCondition = new class'X2Condition_UnitProperty';
 	ShooterCondition.ExcludeImpaired = true;
 	ShooterCondition.ExcludeDead = true;
-   ShooterCondition.ExcludePanicked = true;
-   ShooterCondition.ExcludeInStasis = true;
-   ShooterCondition.ExcludeStunned = true;
-   ShooterCondition.ExcludeUnableToAct = true;
-   ShooterCondition.ExcludeIncapacitated = true;
-   ShooterCondition.ExcludeUnconscious = true;
+	ShooterCondition.ExcludePanicked = true;
+	ShooterCondition.ExcludeInStasis = true;
+	ShooterCondition.ExcludeStunned = true;
+	ShooterCondition.ExcludeUnableToAct = true;
+	ShooterCondition.ExcludeIncapacitated = true;
+	ShooterCondition.ExcludeUnconscious = true;
 	Template.AbilityShooterConditions.AddItem(ShooterCondition);
 
 	// +1 Armor
 	StatChange = new class'X2Effect_PersistentStatChange';
 	StatChange.bRemoveWhenSourceImpaired = true;
 	StatChange.bRemoveWhenSourceDies = true;
-    StatChange.bRemoveWhenSourceDamaged = true;
+    StatChange.bRemoveWhenSourceDamaged = false;
 	StatChange.DuplicateResponse = eDupe_Allow;
 	StatChange.BuildPersistentEffect(1, false, true, false, eWatchRule_UnitTurnBegin);
 	StatChange.EffectName = 'BaseGuardStatChange';
@@ -73,7 +73,7 @@ static function X2AbilityTemplate AddNewRiotGuard()
 	Template.AbilityCosts.AddItem(ActionCost);
 
 	Cooldown = new class'X2AbilityCooldown';
-	Cooldown.iNumTurns = 1;
+	Cooldown.iNumTurns = 2;
 	Template.AbilityCooldown = Cooldown;
 
 	return Template;

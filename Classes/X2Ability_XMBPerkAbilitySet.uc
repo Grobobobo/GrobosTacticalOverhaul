@@ -56,6 +56,7 @@ var config int EXTRA_ADRENAL_HP_BONUS;
 var config int MOVING_TARGET_DEFENSE;
 var config int MOVING_TARGET_DODGE;
 
+var config int GRAZING_FIRE_SUCCESS_CHANCE;
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
 var localized string RageTriggeredFriendlyDesc;
@@ -154,9 +155,15 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(CreateWeaponUpgradeCritBonus('EnhancedPistolCrit',class'X2Item_RebalancedWeapons'.default.ENHANCED_PISTOLS_CRIT_BONUS));
 
 	Templates.AddItem(NewBreakerFocus());
-
-
+	Templates.AddItem(CloseandPersonal());
+	
 	Templates.AddItem(CreateCallForAndroidReinforcements());
+	Templates.AddItem(Packmaster());
+	Templates.AddItem(Reposition());
+	Templates.AddItem(CreateMindFlayDamageBuff());
+	Templates.AddItem(AddGrazingFireAbility());
+
+	
 	
 	//Templates.AddItem(OverrideDELR());
 
@@ -1288,8 +1295,8 @@ static function X2AbilityTemplate AddDamageControlAbility()
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
 	//Template.BuildInterruptGameStateFn = TypicalAbility_BuildInterruptGameState;
-
-	Template.AdditionalAbilities.AddItem('DamageControlPassive');
+	//looks like it's not needed?
+	//Template.AdditionalAbilities.AddItem('DamageControlPassive');
 
 	return Template;
 }
@@ -1563,7 +1570,21 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 	return Template;
 }
 
+static function X2AbilityTemplate CreateMindFlayDamageBuff()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_MindFlayBonusDamage				MeleeBuffsEffect;
 
+	MeleeBuffsEffect = new class'X2Effect_MindFlayBonusDamage';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.MindFlayDamageBonusTier2 = 1;
+    MeleeBuffsEffect.MindFlayDamageBonusTier3 = 2;
+
+	Template = Passive('MindFlayBonusDamage', "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
 static function X2AbilityTemplate AddSMGBonusAbility()
 {
 	local X2AbilityTemplate                 Template;	
@@ -2050,7 +2071,7 @@ static function X2AbilityTemplate NewBreakerFocus()
 	StatChanges.AddItem(NewStatChange);
    // Trade Strength and Willpower
 	NewStatChange.StatType = eStat_Will;
-	NewStatChange.StatAmount = -30;
+	NewStatChange.StatAmount = -50;
 	StatChanges.AddItem(NewStatChange);
 	NewStatChange.StatType = eStat_Strength;
 	NewStatChange.StatAmount = 50;
@@ -2255,6 +2276,113 @@ static function CallInXComAndroidReinforcementVisualization(XComGameState Visual
 		UpdateUIAction.SpecificID = ActionMetadata.StateObject_NewState.ObjectID;
 		UpdateUIAction.UpdateType = EUIUT_GroupInitiative;
 	
+}
+
+static function X2AbilityTemplate Reposition()
+{
+	local X2AbilityTemplate					Template;
+	local X2Effect_HitandRun				HitandRunEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'Reposition_LW');
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_SOCombatEngineer.UIPerk_skirmisher";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	HitandRunEffect = new class'X2Effect_HitandRun';
+	HitandRunEffect.HNRUsesName = 'RepositionUses';
+	HitandRunEffect.BuildPersistentEffect(1, true, false, false);
+	HitandRunEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage,,,Template.AbilitySourceName);
+	HitandRunEffect.DuplicateResponse = eDupe_Ignore;
+	HitandRunEffect.HITANDRUN_FULLACTION=false;
+	Template.AddTargetEffect(HitandRunEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	return Template;
+}
+static function X2AbilityTemplate CloseandPersonal()
+{
+	local X2AbilityTemplate						Template;
+	local X2Effect_CloseandPersonal				CritModifier;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'CloseandPersonal');
+	Template.IconImage = "img:///UILibrary_LW_PerkPack.LW_AbilityCloseandPersonal";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	Template.bIsPassive = true;
+	CritModifier = new class 'X2Effect_CloseandPersonal';
+	CritModifier.BuildPersistentEffect (1, true, false);
+	CritModifier.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
+	Template.AddTargetEffect (CritModifier);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+
+
+static function X2DataTemplate PackMaster()
+{
+	local X2AbilityTemplate Template;
+	local X2Effect_PackMaster PackMasterEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'PackMaster');
+	Template.IconImage = "img:///UILibrary_XPerkIconPack.UIPerk_adrenaline_defense";
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	PackMasterEffect = new class'X2Effect_PackMaster';
+	PackMasterEffect.BuildPersistentEffect(1, true, true);
+
+	Template.AddTargetEffect(PackMasterEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+
+	static function X2AbilityTemplate AddGrazingFireAbility()
+{
+	local X2AbilityTemplate					Template;
+	local X2Effect_GrazingFire				GrazingEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'GrazingFire');
+
+	Template.IconImage = "img:///UILibrary_LW_PerkPack.LW_AbilityGrazingFire";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.Hostility = eHostility_Neutral;
+	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
+	Template.AbilityToHitCalc = default.DeadEye;
+    Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	Template.bDisplayInUITooltip = true;
+	Template.bDisplayInUITacticalText = true;
+	Template.bShowActivation = false;
+	Template.bSkipFireAction = true;
+	Template.bCrossClassEligible = true;
+	GrazingEffect = new class'X2Effect_GrazingFire';
+	GrazingEffect.SuccessChance = default.GRAZING_FIRE_SUCCESS_CHANCE;
+	GrazingEffect.BuildPersistentEffect (1, true, false);
+	GrazingEffect.SetDisplayInfo (ePerkBuff_Passive,Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage,,, Template.AbilitySourceName); 
+	Template.AddTargetEffect(GrazingEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+	return Template;
 }
 
 defaultproperties

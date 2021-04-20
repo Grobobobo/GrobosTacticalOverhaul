@@ -11,6 +11,24 @@ class X2Item_OverrideWeapons extends X2Item config(GameData_WeaponData);
 
 var config int COMBAT_PROTOCOL_DAMAGE;
 
+var config int CEASEFIREBOMB_RANGE;
+var config int CEASEFIREBOMB_RADIUS;
+var config int CEASEFIREBOMB_ICLIPSIZE;
+var config int CEASEFIREBOMB_ISOUNDRANGE;
+var config int CEASEFIREBOMB_IENVIRONMENTDAMAGE;
+var config int CEASEFIREBOMB_IPOINTS;
+
+var config WeaponDamageValue FLASHBOMB_BASEDAMAGE;
+var config int FLASHBOMB_ISOUNDRANGE;
+var config int FLASHBOMB_IENVIRONMENTDAMAGE;
+var config int FLASHBOMB_ISUPPLIES;
+var config int FLASHBOMB_TRADINGPOSTVALUE;
+var config int FLASHBOMB_IPOINTS;
+var config int FLASHBOMB_ICLIPSIZE;
+var config int FLASHBOMB_RANGE;
+var config int FLASHBOMB_RADIUS;
+
+
 static function array<X2DataTemplate> CreateTemplates()
 {
 	local array<X2DataTemplate> Weapons;
@@ -18,6 +36,10 @@ static function array<X2DataTemplate> CreateTemplates()
 
     Weapons.AddItem(CreateTemplate_XComOperatorGremlin());
     //Weapons.AddItem(CreateBreachSmokebomb());
+
+	Weapons.AddItem(CreateBreachCeasefirebomb());
+	Weapons.AddItem(CreateBreachFlashbomb());
+	
 
     return Weapons;
 }
@@ -119,6 +141,110 @@ static function X2DataTemplate CreateBreachSmokebomb()
 
 	Template.SetUIStatMarkup(class'XLocalizedData'.default.RangeLabel, , class'X2Item_DefaultGrenades'.default.SMOKEGRENADE_RANGE);
 	Template.SetUIStatMarkup(class'XLocalizedData'.default.RadiusLabel, , class'X2Item_DefaultGrenades'.default.SMOKEGRENADE_RADIUS);
+
+	Template.WeaponPrecomputedPathData.MaxNumberOfBounces = 0;
+
+	return Template;
+}
+
+
+static function X2DataTemplate CreateBreachCeasefirebomb()
+{
+	local X2GrenadeTemplate Template;
+	local X2Effect_DisableWeapon DisableWeapon;
+
+	`CREATE_X2TEMPLATE(class'X2GrenadeTemplate', Template, 'BreachCeasefirebomb');
+
+	Template.strImage = "img:///UILibrary_Common.Armory_G_Ceasefire_R";
+	Template.EquipSound = "UI_Strategy_Armory_Equip_Grenade";
+	Template.GameArchetype = "WP_Breach_CeaseFireBomb.WP_Breach_CeaseFireBomb"; 
+	Template.CanBeBuilt = false;
+	Template.AddAbilityIconOverride('ThrowGrenade', "img:///UILibrary_PerkIcons.UIPerk_grenade_smoke");
+	Template.AddAbilityIconOverride('LaunchGrenade', "img:///UILibrary_PerkIcons.UIPerk_grenade_smoke");
+
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.ChargesLabel, , 1);
+
+	DisableWeapon = new class'X2Effect_DisableWeapon';
+	Template.ThrownGrenadeEffects.AddItem(DisableWeapon);
+
+	Template.iRange = default.CEASEFIREBOMB_RANGE;
+	Template.iRadius = default.CEASEFIREBOMB_RADIUS;
+	Template.iSoundRange = default.CEASEFIREBOMB_ISOUNDRANGE;
+	Template.iEnvironmentDamage = default.CEASEFIREBOMB_IENVIRONMENTDAMAGE;
+	Template.PointsToComplete = default.CEASEFIREBOMB_IPOINTS;
+	Template.iClipSize = default.CEASEFIREBOMB_ICLIPSIZE;
+	Template.Tier = 0;
+
+	Template.Abilities.AddItem('BreachThrowCeasefirebomb');
+	Template.InventorySlot = eInvSlot_Breach;
+	Template.StowedLocation = eSlot_BeltHolster;
+	Template.WeaponCat = 'breachthrowable';
+	Template.ItemCat = 'breachthrowable';
+
+	// Soldier Bark
+
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.RangeLabel, , default.CEASEFIREBOMB_RANGE);
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.RadiusLabel, , default.CEASEFIREBOMB_RADIUS);
+
+	Template.WeaponPrecomputedPathData.MaxNumberOfBounces = 0;
+
+	return Template;
+}
+
+
+static function X2DataTemplate CreateBreachFlashbomb()
+{
+	local X2GrenadeTemplate Template;
+	local X2Effect_ApplyWeaponDamage WeaponDamageEffect;
+	local ArtifactCost Resources;
+
+	`CREATE_X2TEMPLATE(class'X2GrenadeTemplate', Template, 'BreachFlashbomb');
+
+	Template.strImage = "img:///UILibrary_Common.Armory_G_Flashbang_R";
+	Template.EquipSound = "UI_Strategy_Armory_Equip_Grenade";
+	Template.AddAbilityIconOverride('ThrowGrenade', "img:///UILibrary_PerkIcons.UIPerk_grenade_flash");
+	Template.AddAbilityIconOverride('LaunchGrenade', "img:///UILibrary_PerkIcons.UIPerk_grenade_flash");
+	Template.iRange = default.FLASHBOMB_RANGE;
+	Template.iRadius = default.FLASHBOMB_RADIUS;
+
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.ChargesLabel, , 1);
+
+	Template.ItemCat = 'breachthrowable';
+	Template.WeaponCat = 'breachthrowable';
+	Template.InventorySlot = eInvSlot_Breach;
+	Template.StowedLocation = eSlot_BeltHolster;
+	Template.Abilities.AddItem('BreachThrowFlashbomb');
+
+	Template.ThrownGrenadeEffects.AddItem(class'X2StatusEffects'.static.CreateDisorientedStatusEffect(true, , false));
+
+	//We need to have an ApplyWeaponDamage for visualization, even if the grenade does 0 damage (makes the unit flinch, shows overwatch removal)
+	WeaponDamageEffect = new class'X2Effect_ApplyWeaponDamage';
+	WeaponDamageEffect.bExplosiveDamage = true;
+	WeaponDamageEffect.DamageTypes.AddItem(class'X2Item_DefaultDamageTypes'.default.DisorientDamageType); // Added to allow 'immune' flyover on TheLost<apc> 
+	Template.ThrownGrenadeEffects.AddItem(WeaponDamageEffect);
+
+	Template.LaunchedGrenadeEffects = Template.ThrownGrenadeEffects;
+
+	Template.GameArchetype = "WP_Breach_FlashBomb.WP_Breach_FlashBomb";
+
+	Template.CanBeBuilt = true;
+
+	Template.iSoundRange = default.FLASHBOMB_ISOUNDRANGE;
+	Template.iEnvironmentDamage = default.FLASHBOMB_IENVIRONMENTDAMAGE;
+	Template.TradingPostValue = 10;
+	Template.PointsToComplete = default.FLASHBOMB_IPOINTS;
+	Template.iClipSize = default.FLASHBOMB_ICLIPSIZE;
+	Template.Tier = 0;
+
+	// Cost
+	Resources.ItemTemplateName = 'Supplies';
+	Resources.Quantity = 35;
+	Template.Cost.ResourceCosts.AddItem(Resources);
+
+	// Soldier Bark
+
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.RangeLabel, , default.FLASHBOMB_RANGE);
+	Template.SetUIStatMarkup(class'XLocalizedData'.default.RadiusLabel, , default.FLASHBOMB_RADIUS);
 
 	Template.WeaponPrecomputedPathData.MaxNumberOfBounces = 0;
 

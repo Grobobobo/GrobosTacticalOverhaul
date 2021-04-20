@@ -73,7 +73,7 @@ function bool PostAbilityCostPaid(XComGameState_Effect EffectState, XComGameStat
 			if (SourceUnit.NumActionPoints() < 2 && PreCostActionPoints.Length > 0)
 			{
 				//`LOG ("CE10");
-				SourceUnit.ActionPoints.AddItem(class'X2CharacterTemplateManager'.default.StandardActionPoint);
+				SourceUnit.ActionPoints.AddItem(class'X2CharacterTemplateManager'.default.RunAndGunActionPoint);
 				SourceUnit.SetUnitFloatValue ('CloseEncountersUses', iUsesThisTurn + 1.0, eCleanup_BeginTurn);
 				//NewGameState.AddStateObject(SourceUnit);
 				`XEVENTMGR.TriggerEvent('CloseEncounters', AbilityState, SourceUnit, NewGameState);

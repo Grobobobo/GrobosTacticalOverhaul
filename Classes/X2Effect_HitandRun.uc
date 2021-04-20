@@ -4,7 +4,7 @@
 //  PURPOSE: Hit and Run effect to grant free action
 //---------------------------------------------------------------------------------------
 
-class X2Effect_HitandRun extends X2Effect_Persistent config (LW_SoldierSkills);
+class X2Effect_HitandRun extends X2Effect_Persistent config (GameData_SoldierSkills);
 
 var bool HITANDRUN_FULLACTION;
 var config array<name> HNR_ABILITYNAMES;

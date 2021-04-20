@@ -22,15 +22,6 @@ function int GetDefendingDamageModifier(XComGameState_Effect EffectState, XComGa
 	else if ((Attacker.GetMyTemplate().CharacterGroupName == 'AdventStunLancer') && WeaponDamageEffect.DamageTypes.Find('Electrical') != INDEX_NONE)
 		bIsMeleeDamage = true;
 
-	// remove from DOT effects
-	if (WeaponDamageEffect != none)
-	{			
-		if (WeaponDamageEffect.bIgnoreBaseDamage)
-		{	
-			return 0;
-		}
-	}
-
 	if (bIsMeleeDamage)
 	{
 		CurrentDamageMod = -int(float(CurrentDamage) * DamageMod);
