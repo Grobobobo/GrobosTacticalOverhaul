@@ -154,15 +154,20 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('QuickBite');
 	CurrentAbility.AbilityCooldown = CreateCooldown(2);
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
+	CurrentAbility.PostActivationEvents.AddItem('PartingSilkActivated');
+
+	UpdateFearlessAdvance();
 
 	UpdateRiotBash();
 
-	MakeNonTurnEnding(CurrentAbility);
+	//MakeNonTurnEnding(CurrentAbility);
 	UpdateHackRobot();
 	UpdateKineticArmor();
 
 	UpdateGuard();
 	UpdateGeneratorTriggeredTemplate();
+
+	UpdateAdrenalSurge();
 
 	UpdateHailOfBullets();
  
@@ -323,12 +328,22 @@ static function UpdateAbilities()
 	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect());
 	CurrentAbility.AssociatedPassives.AddItem('HoloTargeting');
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('MindShield');
+	CurrentAbility.bDontDisplayInAbilitySummary = false;
+	CurrentAbility.bDisplayInUITooltip = true;
+	CurrentAbility.bDisplayInUITacticalText = true;
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('HazmatSealBonus');
+	CurrentAbility.bDontDisplayInAbilitySummary = false;
+	CurrentAbility.bDisplayInUITooltip = true;
+	CurrentAbility.bDisplayInUITacticalText = true;
+	
 	
 	CurrentAbility = AllAbilities.FindAbilityTemplate('PistolOverwatchShot');
 	CurrentAbility.AddTargetEffect(class'X2Ability_Chosen'.static.HoloTargetEffect());
 	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect(true));
 	CurrentAbility.AssociatedPassives.AddItem('HoloTargeting');
+
 
 	UpdateExtraPadding();
 	UpdateMachWeave();
@@ -349,7 +364,6 @@ static function UpdateItems()
 	local X2WeaponTemplate WeaponTemplate;
 	local X2WeaponUpgradeTemplate WeaponUpgradeTemplate;
 	local X2EquipmentTemplate EquipmentTemplate;
-	local X2GremlinTemplate GremlinTemplate;
 	local X2GrenadeTemplate GrenadeTemplate;
 	ItemTemplateManager = class'X2ItemTemplateManager'.static.GetItemTemplateManager();
 
@@ -410,7 +424,6 @@ static function UpdateItems()
 		WeaponTemplate = X2WeaponTemplate(DataTemplate);
 		WeaponUpgradeTemplate = X2WeaponUpgradeTemplate(DataTemplate);
 		EquipmentTemplate = X2EquipmentTemplate(DataTemplate);
-		GremlinTemplate = X2GremlinTemplate(DataTemplate);
 		GrenadeTemplate = X2GrenadeTemplate(DataTemplate);
 
 		if(WeaponTemplate != none)
@@ -721,6 +734,7 @@ static function UpdateCharacters()
 	   switch( CurrentName ) {
 	   		case 'Thrall':
 				CharTemplate.Abilities.AddItem('WilltoSurvive');
+				CharTemplate.Abilities.AddItem('GrazingFire');
 				break;
 
 			case 'Sorcerer':
@@ -741,6 +755,7 @@ static function UpdateCharacters()
 			case 'Cyberus':
 	   			break;
 			case 'Archon':
+				CharTemplate.Abilities.AddItem('HazmatSealBonus');
 	   			break;
 	   		case 'ProgenyLeader':
 			   CharTemplate.Abilities.AddItem('ChosenSoulStealer');
@@ -751,6 +766,8 @@ static function UpdateCharacters()
 	   			break;
 	   		case 'Viper_Adder':
 				CharTemplate.Abilities.AddItem('SurvivalInstinct_LW');
+				CharTemplate.Abilities.AddItem('Whirlwind2');
+				CharTemplate.Abilities.AddItem('BendingReed');
 	   			break;
 			case 'Viper_Python':
 				break;
@@ -793,6 +810,10 @@ static function UpdateCharacters()
 			case 'SacredCoilDJ':
 				CharTemplate.Abilities.AddItem('SkirmisherStrike');
 	   			break;
+
+			case 'Android':
+			CharTemplate.Abilities.AddItem('GrazingFire');
+	   		break;
 			
 
 			case 'AdvTurretM1':
@@ -824,6 +845,7 @@ static function UpdateCharacters()
 			case 'EPICAR2Carrying_Commando':
 			case 'EPICSHOTGUN1Carrying_Brute':
 			CharTemplate.Abilities.AddItem('PrimaryReturnFire');
+			CharTemplate.Abilities.AddItem('GrazingFire');
 
 				break;
 			case 'Viper_Cobra':
@@ -832,7 +854,7 @@ static function UpdateCharacters()
 				break;
 			case 'Sectoid_Necromancer':
 			case 'EPICSMG1Carrying_Dominator':
-				break;
+	   				break;
 			case 'Bruiser':
 			case 'EPICPISTOL1Carrying_Guardian':
 				break;
@@ -1048,6 +1070,7 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 
 			break;
 		case 'Acolyte':
+			AddAbilityToSetUpData(SetupData,'ChosenVenomRounds', UnitState);
 			break;
 		case 'Sectoid_Resonant':
 			AddAbilityToSetUpData(SetupData,'Sentinel_LW', UnitState);
@@ -1064,10 +1087,13 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		
 		case 'Muton_Legionairre':
+			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
 			break;
 		case 'Viper_Adder':
+			AddAbilityToSetUpData(SetupData,'MindShield', UnitState);
 			break;
 		case 'Viper_Python':
+			AddAbilityToSetUpData(SetupData,'Infighter', UnitState);
 			break;
 
 		case 'Sectoid_Dominator':
@@ -1137,13 +1163,15 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		case 'Viper_Cobra':
 		case 'EPICSMG2Carrying_Resonant':
-			AddAbilityToSetUpData(SetupData,'HuntersInstinct', UnitState);
+			AddAbilityToSetUpData(SetupData,'Evasive', UnitState);
 			break;
 		case 'Sectoid_Necromancer':
 		case 'EPICSMG1Carrying_Dominator':
+			AddAbilityToSetUpData(SetupData,'LowProfile', UnitState);
 			break;
 		case 'Bruiser':
 		case 'EPICPISTOL1Carrying_Guardian':
+			AddAbilityToSetUpData(SetupData,'HazmatSealBonus', UnitState);
 			break;
 		case 'ConspiracyLeader':
 			break;
@@ -1183,14 +1211,16 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		
 		case 'Muton_Legionairre':
-			AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
+			AddAbilityToSetUpData(SetupData,'PsychoticRage_LW', UnitState);
+
+			//AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
 			break;
 		case 'Viper_Adder':	
 			AddAbilityToSetUpData(SetupData,'Predator_LW', UnitState);
 			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
 			break;
 		case 'Viper_Python':
-			AddAbilityToSetUpData(SetupData,'Infighter', UnitState);
+			AddAbilityToSetUpData(SetupData,'MindShield', UnitState);
 			break;
 
 		case 'Sectoid_Dominator':
@@ -1244,6 +1274,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'HardlinerLeader':
 		case 'Hitman':
 		case 'EPICPISTOL2Carrying_Hitman':
+			AddAbilityToSetUpData(SetupData,'ChosenDragonRounds', UnitState);
 			break;
 		case 'Muton_Bomber':
 		case 'EPICSHOTGUN2Carrying_Bomber':
@@ -1252,12 +1283,16 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'EPICAR1Carrying_Adder':
 		case 'EPICAR2Carrying_Commando':
 		case 'EPICSHOTGUN1Carrying_Brute':
+			AddAbilityToSetUpData(SetupData,'ChosenVenomRounds', UnitState);
 			break;
 		case 'Viper_Cobra':
 		case 'EPICSMG2Carrying_Resonant':
+			AddAbilityToSetUpData(SetupData,'HuntersInstinct', UnitState);
 			break;
 		case 'Sectoid_Necromancer':
 		case 'EPICSMG1Carrying_Dominator':
+		AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
+
 			break;
 		case 'Bruiser':
 		case 'EPICPISTOL1Carrying_Guardian':
@@ -1571,8 +1606,6 @@ static function UpdateSelfDestruct(X2AbilityTemplateManager AllAbilities)
 
    MakeFreeAction(Template);
 
-
-
 }
 
 static function UpdateCoress(X2AbilityTemplateManager AllAbilities)
@@ -1776,8 +1809,6 @@ static function UpdateCrowdControl()
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2Effect Effect;
-	local X2AbilityCharges Charges;
-	local X2AbilityCost_Charges Chargecost;
 	local X2Condition_AbilityProperty AbilityCondition;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('CrowdControl');
@@ -1788,7 +1819,14 @@ static function UpdateCrowdControl()
 		if(Effect.IsA('X2Effect_Rooted')|| Effect.IsA('X2Effect_DisableWeapon') || Effect.IsA('X2Effect_PersistentStatChange') )
 		{
 			AbilityCondition = new class'X2Condition_AbilityProperty';
+			
+				
 			AbilityCondition.OwnerHasSoldierAbilities.AddItem('ClassTrainingAbility_Hellion');
+			if(Effect.IsA('X2Effect_DisableWeapon'))
+			{
+				X2Effect_DisableWeapon(Effect).bFailSilently=true;
+			}
+			
 			Effect.TargetConditions.AddItem(AbilityCondition);		
 		}
 	}
@@ -1904,6 +1942,25 @@ static function UpdateGuard()
 
 }
 
+static function UpdateAdrenalSurge()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_SetTemplarFocus FocusEffect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	Template = AllAbilities.FindAbilityTemplate('Adrenalsurge');
+
+
+	FocusEffect = new class'X2Effect_SetTemplarFocus';
+	FocusEffect.SetFocus = 5;
+
+	Template.AddShooterEffect(FocusEffect);
+
+}
+
+
+	
+
 static function UpdateAidProtocol()
 {
 	local X2AbilityTemplate                    Template;
@@ -1978,7 +2035,7 @@ static function UpdateExtraPadding()
 
 	Template = AllAbilities.FindAbilityTemplate('ExtraPaddingBonus');
 	CritDefEffect = new class'X2Effect_Resilience';
-	CritDefEffect.CritDef_Bonus = 15;
+	CritDefEffect.CritDef_Bonus = 20;
 	CritDefEffect.BuildPersistentEffect (1, true, false, false);
 	Template.AddTargetEffect(CritDefEffect);
 
@@ -2224,6 +2281,7 @@ static function UpdateRageSmash()
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2Condition_UnitProperty	UnitCondition;
+	local X2AbilityToHitCalc_StandardMelee MeleeHitCalc;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	Template = AllAbilities.FindAbilityTemplate('BreakerRageAttack');
@@ -2239,6 +2297,10 @@ static function UpdateRageSmash()
 	UnitCondition.ExcludeUnBreached=true;
 
 	Template.AbilityTargetConditions.AddItem(UnitCondition);
+
+	MeleeHitCalc = new class'X2AbilityToHitCalc_StandardMelee';
+	//MeleeHitCalc.BuiltInHitMod = -15;
+	Template.AbilityToHitCalc = MeleeHitCalc;
 }
 
 static function UpdateCCS()
@@ -2269,6 +2331,99 @@ static function UpdateMindFlay()
 	MakeNonTurnEnding(Template);
 	Template.AdditionalAbilities.AddItem('MindFlayBonusDamage');
 }
+
+static function UpdateFearlessAdvance()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_SetUnitValue	UnitValueEffect;
+	local X2Condition_UnitValue	UnitValueCondition;
+	local X2Effect_DisableWeapon DisarmEffect;
+	local X2Effect_Persistent DisorientedEffect;
+	local X2Effect_Stunned StunnedEffect;
+	local X2Effect_Rooted RootedEffect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	
+	Template = AllAbilities.FindAbilityTemplate(class'X2Ability_BreachAbilities'.default.BreachHellionRushAbilityName);
+
+	// Add debuffs (disarm, disorient, stun, root)
+	/// Disarm
+	UnitValueEffect = new class'X2Effect_SetUnitValue';
+	UnitValueEffect.NewValueToSet = 1;
+	UnitValueEffect.UnitName = 'CripplingBlowDisarmResult';
+	UnitValueEffect.CleanupType = eCleanup_BeginTurn;
+	UnitValueEffect.ApplyChanceFn = class'X2Ability_Hellion'.static.CripplingBlowDisarm_ApplyChanceCheck;
+	Template.AddTargetEffect(UnitValueEffect);
+
+	UnitValueCondition = new class'X2Condition_UnitValue';
+	UnitValueCondition.AddCheckValue('CripplingBlowDisarmResult', 1);
+
+	DisarmEffect = new class'X2Effect_DisableWeapon';
+	DisarmEffect.bFailSilently = true;
+	DisarmEffect.TargetConditions.AddItem(UnitValueCondition);
+	Template.AddTargetEffect(DisarmEffect);
+	/// End disarm
+
+	/// Disorient
+	UnitValueEffect = new class'X2Effect_SetUnitValue';
+	UnitValueEffect.NewValueToSet = 1;
+	UnitValueEffect.UnitName = 'CripplingBlowDisorientResult';
+	UnitValueEffect.CleanupType = eCleanup_BeginTurn;
+	UnitValueEffect.ApplyChanceFn = class'X2Ability_Hellion'.static.CripplingBlowDisoriented_ApplyChanceCheck;
+	Template.AddTargetEffect(UnitValueEffect);
+
+	UnitValueCondition = new class'X2Condition_UnitValue';
+	UnitValueCondition.AddCheckValue('CripplingBlowDisorientResult', 1);
+	UnitValueCondition.AddCheckValue('CripplingBlowDisarmResult', 0);
+
+
+	DisorientedEffect = class'X2StatusEffects'.static.CreateDisorientedStatusEffect(, , false);
+	DisorientedEffect.bRemoveWhenSourceDies = false;
+	DisorientedEffect.TargetConditions.AddItem(UnitValueCondition);
+	Template.AddTargetEffect(DisorientedEffect);
+	/// End disorient
+
+	/// Stun
+	UnitValueEffect = new class'X2Effect_SetUnitValue';
+	UnitValueEffect.NewValueToSet = 1;
+	UnitValueEffect.UnitName = 'CripplingBlowStunResult';
+	UnitValueEffect.CleanupType = eCleanup_BeginTurn;
+	UnitValueEffect.ApplyChanceFn = class'X2Ability_Hellion'.static.CripplingBlowStun_ApplyChanceCheck;
+	Template.AddTargetEffect(UnitValueEffect);
+
+	UnitValueCondition = new class'X2Condition_UnitValue';
+	UnitValueCondition.AddCheckValue('CripplingBlowStunResult', 1);
+	UnitValueCondition.AddCheckValue('CripplingBlowDisarmResult', 0);
+	UnitValueCondition.AddCheckValue('CripplingBlowDisorientResult', 0);
+
+	StunnedEffect = class'X2StatusEffects'.static.CreateStunnedStatusEffect(class'X2Ability_Hellion'.default.CRIPPLINGBLOW_STUN_LEVEL, 100, false);
+	StunnedEffect.bRemoveWhenSourceDies = false;
+	StunnedEffect.TargetConditions.AddItem(UnitValueCondition);
+	Template.AddTargetEffect(StunnedEffect);
+	/// End stun
+
+	/// Root
+	UnitValueEffect = new class'X2Effect_SetUnitValue';
+	UnitValueEffect.NewValueToSet = 1;
+	UnitValueEffect.UnitName = 'CripplingBlowRootedResult';
+	UnitValueEffect.CleanupType = eCleanup_BeginTurn;
+	UnitValueEffect.ApplyChanceFn = class'X2Ability_Hellion'.static.CripplingBlowRoot_ApplyChanceCheck;
+	Template.AddTargetEffect(UnitValueEffect);
+
+	UnitValueCondition = new class'X2Condition_UnitValue';
+	UnitValueCondition.AddCheckValue('CripplingBlowRootedResult', 1);
+	UnitValueCondition.AddCheckValue('CripplingBlowDisarmResult', 0);
+	UnitValueCondition.AddCheckValue('CripplingBlowDisorientResult', 0);
+	UnitValueCondition.AddCheckValue('CripplingBlowStunResult', 0);
+
+	RootedEffect = class'X2StatusEffects'.static.CreateRootedStatusEffect(class'X2Ability_Hellion'.default.CRIPPLINGBLOW_ROOT_TURNS);
+	RootedEffect.bRemoveWhenSourceDies = false;
+	RootedEffect.TargetConditions.AddItem(UnitValueCondition);
+	Template.AddTargetEffect(RootedEffect);
+
+}
+
+
 	
 
 
