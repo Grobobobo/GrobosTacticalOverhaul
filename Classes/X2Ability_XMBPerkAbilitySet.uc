@@ -56,6 +56,8 @@ var config int EXTRA_ADRENAL_HP_BONUS;
 var config int MOVING_TARGET_DEFENSE;
 var config int MOVING_TARGET_DODGE;
 
+var config int EXTRA_PLATED_HP_BONUS;
+
 var config int GRAZING_FIRE_SUCCESS_CHANCE;
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
@@ -168,6 +170,7 @@ static function array<X2DataTemplate> CreateTemplates()
 
 	Templates.AddItem(ChosenVenomRounds());
 	Templates.AddItem(ChosenVenomRoundsPassive());
+	Templates.AddItem(AddExtraPlatedHP());
 
 	
 	//Templates.AddItem(OverrideDELR());
@@ -1733,6 +1736,36 @@ static function X2AbilityTemplate AddExtraHazmatHP()
 	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
 	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false, , Template.AbilitySourceName);
 	PersistentStatChangeEffect.AddPersistentStatChange(eStat_HP, default.EXTRA_HAZMAT_HP_BONUS);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+
+	return Template;
+}
+
+static function X2AbilityTemplate AddExtraPlatedHP()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PersistentStatChange		PersistentStatChangeEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'PlatedHPBonus');
+	Template.IconImage = "img:///UILibrary_Common.ArmorMod_ExtraPadding";
+
+	Template.AbilitySourceName = 'eAbilitySource_Item';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+	// Bonus to health stat Effect
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false, , Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_HP, default.EXTRA_PLATED_HP_BONUS);
 	Template.AddTargetEffect(PersistentStatChangeEffect);
 
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;

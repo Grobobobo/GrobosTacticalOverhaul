@@ -36,8 +36,24 @@ static event OnLoadedSavedGameToStrategy()
 /// </summary>
 static event InstallNewCampaign(XComGameState StartState)
 {
+	local XComGameState_StrategyInventory HQInventory;
 
+	// Retrieve the strategy inventory object
+	foreach StartState.IterateByClassType(class'XComGameState_StrategyInventory', HQInventory)
+	{
+		break;
+	}
+
+	// Add 3 of each weapon type to player's inventory
+	if( HQInventory != none )
+	{
+		HQInventory.AddItemByName(StartState, 'WPN_XComAR', 1);
+		HQInventory.AddItemByName(StartState, 'WPN_XComSMG', 1);
+		HQInventory.AddItemByName(StartState, 'WPN_XComShotgun', 1);
+	}
 }
+
+
 
 /// <summary>
 /// Called just before the player launches into a tactical a mission while this DLC / Mod is installed.
@@ -94,7 +110,7 @@ static function UpdateStrategyTemplates()
 	ScarTemplate.StepDelta = 2;
 
 	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_Offense'));
-	ScarTemplate.StepDelta = 20;
+	ScarTemplate.StepDelta = 15;
 
 	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_Mobility'));
 	ScarTemplate.StepDelta = 2;
@@ -107,8 +123,13 @@ static function UpdateStrategyTemplates()
 	ScarTemplate.LowerBound = -80;
 
 	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_CritChance'));
-	ScarTemplate.StepDelta = 40;
+	ScarTemplate.StepDelta = 20;
 	ScarTemplate.LowerBound = -80;
+
+	ScarTemplate = X2DioUnitScarTemplate(StrategyManager.FindStrategyElementTemplate('UnitScar_PsiOffense'));
+	ScarTemplate.StepDelta = 15;
+	ScarTemplate.LowerBound = 0;
+	
 
 
 }
@@ -262,7 +283,7 @@ static function UpdateAbilities()
 	//MakeMeleeBlueMove('ChargedBash');
 
 	
-	
+	UpdateMotileInducer();
 	UpdateMindfire();
 	UpdatePsiDomain();
 
@@ -344,6 +365,10 @@ static function UpdateAbilities()
 	CurrentAbility.AddTargetEffect(class'X2Ability_GrenadierAbilitySet'.static.HoloTargetEffect(true));
 	CurrentAbility.AssociatedPassives.AddItem('HoloTargeting');
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('WardenGuardPassive');
+	CurrentAbility.bHideOnClassUnlock=false;
+
+	
 
 	UpdateExtraPadding();
 	UpdateMachWeave();
@@ -580,6 +605,11 @@ static function UpdateItems()
 				case 'HazmatSealing':
 					EquipmentTemplate.Abilities.AddItem('HazmatHPBonus');
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.HealthLabel, eStat_HP, 1);
+					break;
+
+				case 'PlatedVest':
+					EquipmentTemplate.Abilities.AddItem('PlatedHPBonus');
+					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.HealthLabel, eStat_HP, 2);
 					break;
 				
 				case 'InfiltratorWeave':
@@ -844,6 +874,8 @@ static function UpdateCharacters()
 			case 'EPICAR1Carrying_Adder':
 			case 'EPICAR2Carrying_Commando':
 			case 'EPICSHOTGUN1Carrying_Brute':
+
+			CharTemplate.CharacterGroupName = 'CriminalOutlaw'; // from outlaw
 			CharTemplate.Abilities.AddItem('PrimaryReturnFire');
 			CharTemplate.Abilities.AddItem('GrazingFire');
 
@@ -1713,6 +1745,25 @@ static function UpdateMindfire()
 
 	MakeNonTurnEnding(Template);
 }
+
+static function UpdateMotileInducer()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_GrantActionPoints GrantActionPointsEffect;
+
+		AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+		Template = AllAbilities.FindAbilityTemplate('AidBeaconAbility');
+
+		RemoveAbilityTargetEffects(Template,'X2Effect_GrantActionPoints');
+
+		GrantActionPointsEffect = new class 'X2Effect_GrantActionPoints';
+		GrantActionPointsEffect.NumActionPoints = 1;
+		GrantActionPointsEffect.PointType = class'X2CharacterTemplateManager'.default.StandardActionPoint;
+		GrantActionPointsEffect.bSelectUnit = true;
+		Template.AddTargetEffect(GrantActionPointsEffect);
+}
+
 
 static function RemoveAbilityMultiTargetEffects(X2AbilityTemplate Template, name EffectName)
 {
