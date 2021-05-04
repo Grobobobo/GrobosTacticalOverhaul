@@ -11,6 +11,7 @@ class X2DownloadableContentInfo_GrobosTacticalOverhaul extends X2DownloadableCon
 var config array<name> PrimaryWeaponAbilities;
 var config array<name> SecondaryWeaponAbilities;
 
+var config int MINDFLAY_COOLDOWN;
 
 /// <summary>
 /// This method is run if the player loads a saved game that was created prior to this DLC / Mod being installed, and allows the 
@@ -475,15 +476,17 @@ static function UpdateItems()
 					break;
 
 				case 'WPN_XComAR':
+				case 'WPN_EpicAR_1':
+				case 'WPN_EpicAR_2':
 					WeaponTemplate.bisGenericWeapon=true;
 					break;
 
-				case 'WPN_XComShotgun':
-					WeaponTemplate.bisGenericWeapon=true;
-					WeaponTemplate.Abilities.AddItem('Shotgun_StatPenalty');
-					WeaponTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, -1);
-					break;
 				//shotgunmob
+
+				case 'WPN_XComShotgun':
+				case 'WPN_EpicShotgun_1':
+				case 'WPN_EpicShotgun_2':
+					WeaponTemplate.bisGenericWeapon=true;
 				case 'Muton_Legionairre_WPN':
 				case 'Android_Shotgun':
 				case 'THRALL_SHOTGUN':
@@ -491,24 +494,16 @@ static function UpdateItems()
 				case 'Liquidator_Shotgun':
 				case 'Muton_Bomber_WPN':
 				case 'BreakerShotgun':
-				case 'WPN_EpicShotgun_1':
-				case 'WPN_EpicShotgun_2':
 					WeaponTemplate.Abilities.AddItem('Shotgun_StatPenalty');
 					WeaponTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, -1);
-
 					break;
 
 				case 'WPN_XComSMG':
+				case 'WPN_EpicSMG_1':
+				case 'WPN_EpicSMG_2':
 					WeaponTemplate.bisGenericWeapon=true;
-					WeaponTemplate.Abilities.AddItem('SMG_StatBonus');
-					WeaponTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, 1);
-					break;
-
 
 				case 'HITMAN_PISTOL':
-					WeaponTemplate.Abilities.AddItem('SMG_StatBonus');
-					//WeaponTemplate.Abilities.RemoveItem('CriminalSentinelAbility_StandardShotActivated');
-
 				case 'Praetorian_ShieldPistol_WPN':
 				case 'Viper_Python_WPN':
 				case 'Sectoid_Dominator_WPN':
@@ -529,9 +524,8 @@ static function UpdateItems()
 				case 'WPN_XComWardenPistol':
 				case 'WPN_EpicPistol_1':
 				case 'WPN_EpicPistol_2':			
-				case 'WPN_EpicSMG_1':
-				case 'WPN_EpicSMG_2':
 					WeaponTemplate.Abilities.AddItem('SMG_StatBonus');
+					WeaponTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, 1);
 					WeaponTemplate.Abilities.RemoveItem('SprayAndPray');
 					break;
 				default:
@@ -2378,7 +2372,7 @@ static function UpdateMindFlay()
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	
 	Template = AllAbilities.FindAbilityTemplate('MindFlay');
-	Template.AbilityCooldown = CreateCooldown(2);
+	Template.AbilityCooldown = CreateCooldown(default.MINDFLAY_COOLDOWN);
 	MakeNonTurnEnding(Template);
 	Template.AdditionalAbilities.AddItem('MindFlayBonusDamage');
 }

@@ -4,7 +4,7 @@
 //  PURPOSE: Sets up Executioner perk effect
 //--------------------------------------------------------------------------------------- 
 
-class X2Effect_Executioner_LW extends X2Effect_Persistent config (LW_SoldierSkills);
+class X2Effect_Executioner_LW extends X2Effect_Persistent config (GameData_SoldierSkills);
 
 var config int EXECUTIONER_AIM_BONUS;
 var config int EXECUTIONER_CRIT_BONUS;

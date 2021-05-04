@@ -673,7 +673,7 @@ static function X2AbilityTemplate AddCloseEncountersAbility()
 {
 	local X2AbilityTemplate							Template;
 	local X2Effect_CloseEncounters					ActionEffect;
-	
+	local X2Condition_BreachPhase	BreachPhase;
 	`CREATE_X2ABILITY_TEMPLATE (Template, 'CloseEncounters');
 	Template.IconImage = "img:///UILibrary_LW_PerkPack.LW_AbilityCloseEncounters";
 	Template.AbilitySourceName = 'eAbilitySource_Perk';
@@ -682,6 +682,12 @@ static function X2AbilityTemplate AddCloseEncountersAbility()
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+
+	BreachPhase = new class'X2Condition_BreachPhase';
+	BreachPhase.bValidInBreachPhase = false;
+	Template.AbilityShooterConditions.AddItem(BreachPhase);
+
 	//Template.bIsPassive = true;  // needs to be off to allow perks
 	ActionEffect = new class 'X2Effect_CloseEncounters';
 	ActionEffect.SetDisplayInfo (ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
@@ -1318,7 +1324,7 @@ static function X2AbilityTemplate CreateBullRush()
 	local X2Effect_GrantActionPoints AddAPEffect;
 	local array<name> SkipExclusions;
 	local X2Condition_UnitProperty UnitPropertyCondition;
-
+	local X2Condition_BreachPhase BreachPhase;
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'BullRush');
 
 	Template.AbilitySourceName = 'eAbilitySource_Standard';
@@ -1329,6 +1335,10 @@ static function X2AbilityTemplate CreateBullRush()
 	Template.AbilityTargetStyle = default.SelfTarget;
 
 	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+
+	BreachPhase = new class'X2Condition_BreachPhase';
+	BreachPhase.bValidInBreachPhase = false;
+	Template.AbilityShooterConditions.AddItem(BreachPhase);
 
 	SkipExclusions.AddItem(class'X2AbilityTemplateManager'.default.DisorientedName);
 	SkipExclusions.AddItem(class'X2StatusEffects'.default.BurningName);
@@ -2320,7 +2330,7 @@ static function X2AbilityTemplate Reposition()
 {
 	local X2AbilityTemplate					Template;
 	local X2Effect_HitandRun				HitandRunEffect;
-
+	local X2Condition_BreachPhase	BreachPhase;
 	`CREATE_X2ABILITY_TEMPLATE (Template, 'Reposition_LW');
 	Template.AbilitySourceName = 'eAbilitySource_Perk';
 	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
@@ -2329,6 +2339,12 @@ static function X2AbilityTemplate Reposition()
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
+
+	BreachPhase = new class'X2Condition_BreachPhase';
+	BreachPhase.bValidInBreachPhase = false;
+	Template.AbilityShooterConditions.AddItem(BreachPhase);
+
 	HitandRunEffect = new class'X2Effect_HitandRun';
 	HitandRunEffect.HNRUsesName = 'RepositionUses';
 	HitandRunEffect.BuildPersistentEffect(1, true, false, false);
