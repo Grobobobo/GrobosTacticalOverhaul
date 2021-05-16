@@ -53,7 +53,7 @@ simulated protected function OnEffectAdded(const out EffectAppliedData ApplyEffe
 		{
 			HealAmount += Act2PerUseHPBonus;
 		}
-		if (act == 3)
+		if (act >= 3)
 		{
 			HealAmount += Act3PerUseHPBonus;
 		}

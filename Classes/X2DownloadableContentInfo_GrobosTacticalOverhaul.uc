@@ -255,8 +255,8 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('Impel');
 	MakeFreeAction(CurrentAbility);
 
-	CurrentAbility = AllAbilities.FindAbilityTemplate('SoulSiphon');
-	MakeFreeAction(CurrentAbility);
+
+	UpdtateSoulSiphon();
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('PsionicSuplex');
 	MakeNonTurnEnding(CurrentAbility);
@@ -1067,15 +1067,14 @@ static function FinalizeUnitAbilitiesForInit(XComGameState_Unit UnitState, out a
 		}	
 	}
 
-	switch(Act)
+	if(act >= 3)
 	{
-		case 3:
-		GiveEnemiesAct3Perks(UnitState, SetupData, CharTemplate.DataName);
-		case 2:
 		GiveEnemiesAct2Perks(UnitState, SetupData, CharTemplate.DataName);
-		break;
-		default:
-		break;
+		GiveEnemiesAct3Perks(UnitState, SetupData, CharTemplate.DataName);
+	}
+	else if (act == 2)
+	{
+		GiveEnemiesAct2Perks(UnitState, SetupData, CharTemplate.DataName);
 	}
 
 
@@ -1256,7 +1255,8 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'TriggerHappy', UnitState);
 			break;
 		case 'Berserker':
-			AddAbilityToSetUpData(SetupData,'BullRush', UnitState);
+			//AddAbilityToSetUpData(SetupData,'BullRush', UnitState);
+			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
 			break;
 		case 'Faceless':
 			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
@@ -2471,6 +2471,25 @@ static function UpdateFearlessAdvance()
 
 	
 
+static function UpdtateSoulSiphon()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_RemoveEffectsByDamageType	RemoveEffects;
+	local name HealType;
+
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	Template = AllAbilities.FindAbilityTemplate('SoulSiphon');
+
+	MakeFreeAction(Template);
+
+	RemoveEffects = new class'X2Effect_RemoveEffectsByDamageType';
+	foreach class'X2Ability_DefaultAbilitySet'.default.MedikitHealEffectTypes(HealType)
+	{
+		RemoveEffects.DamageTypesToRemove.AddItem(HealType);
+	}
+	Template.AddTargetEffect(RemoveEffects);
+}
 
 
 
