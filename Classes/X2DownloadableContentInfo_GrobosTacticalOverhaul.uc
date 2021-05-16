@@ -1067,12 +1067,12 @@ static function FinalizeUnitAbilitiesForInit(XComGameState_Unit UnitState, out a
 		}	
 	}
 
-	if(act >= 3)
+	if(Act >= 3)
 	{
 		GiveEnemiesAct2Perks(UnitState, SetupData, CharTemplate.DataName);
 		GiveEnemiesAct3Perks(UnitState, SetupData, CharTemplate.DataName);
 	}
-	else if (act == 2)
+	else if (Act == 2)
 	{
 		GiveEnemiesAct2Perks(UnitState, SetupData, CharTemplate.DataName);
 	}
