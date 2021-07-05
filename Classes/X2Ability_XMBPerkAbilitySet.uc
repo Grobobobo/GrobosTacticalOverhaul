@@ -40,6 +40,9 @@ var config int BREAKER_TIER_3_DAMAGE_BONUS;
 var config int WARDEN_TIER_2_DAMAGE_BONUS;
 var config int WARDEN_TIER_3_DAMAGE_BONUS;
 
+var config int SUBDUE_TIER_2_DAMAGE_BONUS;
+var config int SUBDUE_TIER_3_DAMAGE_BONUS;
+
 var config int SMG_MOBILITY_BONUS;
 var config int SHOTGUN_MOBILITY_PENALTY;
 
@@ -58,6 +61,7 @@ var config int MOVING_TARGET_DODGE;
 
 var config int EXTRA_PLATED_HP_BONUS;
 
+var config int TACSENSE_DEF_BONUS;
 var config int GRAZING_FIRE_SUCCESS_CHANCE;
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
@@ -124,6 +128,7 @@ static function array<X2DataTemplate> CreateTemplates()
 	
 	Templates.AddItem(CreateSecondaryMeleeBuff('BreakerBonus', default.BREAKER_TIER_2_DAMAGE_BONUS, default.BREAKER_TIER_3_DAMAGE_BONUS));
 	Templates.AddItem(CreateSecondaryMeleeBuff('WardenBonus', default.WARDEN_TIER_2_DAMAGE_BONUS, default.WARDEN_TIER_3_DAMAGE_BONUS));
+	Templates.AddItem(CreateSubdueBonusDamageBuff('SubdueBonus', default.SUBDUE_TIER_2_DAMAGE_BONUS, default.SUBDUE_TIER_3_DAMAGE_BONUS));
 
 	Templates.AddItem(AddSMGBonusAbility());
 	Templates.AddItem(AddShotgunPenaltyAbility());
@@ -143,7 +148,6 @@ static function array<X2DataTemplate> CreateTemplates()
 	
 	Templates.AddItem(class'X2Ability_Chosen'.static.CreateMeleeImmunity());
 
-	Templates.AddItem(class'X2Ability_Chosen'.static.ChosenSoulstealer());
 	Templates.AddItem(class'X2Ability_Chosen'.static.ChosenSoulstealer());
 	Templates.AddItem(class'X2Ability_Chosen'.static.CreateChosenRegenerate());
 
@@ -172,6 +176,11 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(ChosenVenomRoundsPassive());
 	Templates.AddItem(AddExtraPlatedHP());
 
+	Templates.AddItem(PinningAttacks());
+	Templates.AddItem(PinningAttacksPassive());
+	Templates.AddItem(TacticalSense());
+
+	
 	
 	//Templates.AddItem(OverrideDELR());
 
@@ -1572,7 +1581,7 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 }
 
 
-	static function X2AbilityTemplate CreateSecondaryMeleeBuff(name TemplateName, int Tier2Bonus, int Tier3Bonus)
+static function X2AbilityTemplate CreateSecondaryMeleeBuff(name TemplateName, int Tier2Bonus, int Tier3Bonus)
 {
 	local X2AbilityTemplate                 Template;
 	local X2Effect_SecondaryMeleeBonus				MeleeBuffsEffect;
@@ -1588,6 +1597,21 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 	return Template;
 }
 
+static function X2AbilityTemplate CreateSubdueBonusDamageBuff(name TemplateName, int Tier2Bonus, int Tier3Bonus)
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_SubdueBonusDamage				MeleeBuffsEffect;
+
+	MeleeBuffsEffect = new class'X2Effect_SubdueBonusDamage';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.MeleeDamageBonusTier2 = Tier2Bonus;
+    MeleeBuffsEffect.MeleeDamageBonusTier3 = Tier3Bonus;
+
+	Template = Passive(TemplateName, "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
 static function X2AbilityTemplate CreateMindFlayDamageBuff()
 {
 	local X2AbilityTemplate                 Template;
@@ -2441,7 +2465,7 @@ static function X2DataTemplate PackMaster()
 }
 
 
-	static function X2AbilityTemplate ChosenDragonRounds()
+static function X2AbilityTemplate ChosenDragonRounds()
 {
 	local X2AbilityTemplate					Template;
 	local X2AbilityTrigger_EventListener	EventListener;
@@ -2625,6 +2649,69 @@ static function X2AbilityTemplate ChosenVenomRoundsPassive()
 	return Template;
 }
 
+	static function X2AbilityTemplate PinningAttacks()
+{
+	local X2AbilityTemplate					Template;
+	local X2AbilityTrigger_EventListener	EventListener;
+	local X2Effect_Rooted RootedEffect;
+	local X2Condition_BreachPhase BreachPhase;
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'PinningAttacks');
+
+	Template.IconImage = "img:///UILibrary_XPerkIconPack.UIPerk_move_circle";
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+
+	Template.AbilityTargetStyle = default.SimpleSingleTarget;
+	Template.AbilityToHitCalc = default.DeadEye;
+
+	Template.AbilityShooterConditions.AddItem(default.LivingShooterProperty);
+	Template.AbilityTargetConditions.AddItem(default.LivingHostileTargetProperty);
+
+	// Trigger on Damage
+	EventListener = new class'X2AbilityTrigger_EventListener';
+	EventListener.ListenerData.EventID = 'AbilityActivated';
+	EventListener.ListenerData.EventFn = AbilityTriggerEventListener_PinningAttacks;
+	EventListener.ListenerData.Deferral = ELD_OnStateSubmitted;
+	EventListener.ListenerData.Priority = 40;
+	EventListener.ListenerData.Filter = eFilter_Unit;
+
+	Template.AbilityTriggers.AddItem(EventListener);
+
+	BreachPhase = new class'X2Condition_BreachPhase';
+	BreachPhase.bValidInBreachPhase = false;
+	Template.AbilityTargetConditions.AddItem(BreachPhase);
+	Template.AbilityShooterConditions.AddItem(BreachPhase);
+
+	//	putting the burn effect first so it visualizes correctly
+
+	RootedEffect = class'X2StatusEffects'.static.CreateRootedStatusEffect(2);
+	RootedEffect.bRemoveWhenSourceDies = false;
+	Template.AddTargetEffect(RootedEffect);
+
+	Template.FrameAbilityCameraType = eCameraFraming_Never; 
+	Template.bSkipExitCoverWhenFiring = true;
+	Template.bSkipFireAction = true;	//	this fire action will be merged by Merge Vis function
+	Template.bShowActivation = true;
+	Template.bUsesFiringCamera = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.BuildVisualizationFn = TypicalAbility_BuildVisualization;
+	Template.MergeVisualizationFn = ApplyEffect_MergeVisualization;
+	Template.BuildInterruptGameStateFn = none;
+
+	Template.AdditionalAbilities.AddItem('PinningAttacksPassive');
+
+	return Template;
+}
+
+static function X2AbilityTemplate PinningAttacksPassive()
+{
+	local X2AbilityTemplate	Template;
+
+	Template = PurePassive('PinningAttacksPassive', "img:///UILibrary_LW_Overhaul.UIPerk_move_circle", false);
+
+	return Template;
+}
+
 function ApplyEffect_MergeVisualization(X2Action BuildTree, out X2Action VisualizationTree)
 {
 	local XComGameStateVisualizationMgr		VisMgr;
@@ -2720,6 +2807,17 @@ static function EventListenerReturn AbilityTriggerEventListener_VenomRounds(
 	return HandleApplyEffectEventTrigger('ChosenVenomRounds', EventData, EventSource, GameState);
 }
 
+
+static function EventListenerReturn AbilityTriggerEventListener_PinningAttacks(
+	Object EventData,
+	Object EventSource,
+	XComGameState GameState,
+	Name EventID,
+	Object CallbackData)
+{
+	return HandleApplyEffectEventTrigger('PinningAttacks', EventData, EventSource, GameState);
+}
+
 static function EventListenerReturn HandleApplyEffectEventTrigger(
 	name AbilityName,
 	Object EventData,
@@ -2794,6 +2892,39 @@ static function EventListenerReturn HandleApplyEffectEventTrigger(
 
 	return ELR_NoInterrupt;
 }
+
+
+	static function X2AbilityTemplate TacticalSense()
+{
+	local XMBEffect_ConditionalBonus ShootingEffect;
+	local X2AbilityTemplate Template;
+	local XMBCondition_CoverType CoverCondition;
+
+	ShootingEffect = new class'XMBEffect_ConditionalBonus';
+	ShootingEffect.EffectName = 'Tacsense';
+
+	ShootingEffect.AddToHitAsTargetModifier(-1 * default.TACSENSE_DEF_BONUS, eHit_Success);
+
+	
+	CoverCondition = new class'XMBCondition_CoverType';
+	CoverCondition.ExcludedCoverTypes.AddItem(CT_None);
+
+	ShootingEffect.AbilityTargetConditionsAsTarget.AddItem(CoverCondition);
+
+	// Prevent the effect from applying to a unit more than once
+	ShootingEffect.DuplicateResponse = eDupe_Refresh;
+
+	// The effect lasts forever
+	ShootingEffect.BuildPersistentEffect(1, true, false, false, eWatchRule_TacticalGameStart);
+	
+	// Activated ability that targets user
+	Template = Passive('TacticalSense_LW', "img:///UILibrary_XPerkIconPack.UIPerk_shot_box", true, ShootingEffect);
+
+	// If this ability is set up as a cross class ability, but it's not directly assigned to any classes, this is the weapon slot it will use
+
+	return Template;
+}
+
 
 defaultproperties
 {

@@ -21,9 +21,12 @@ event name CallMeetsCondition(XComGameState_BaseObject kTarget)
                     {
                         if(!UnitState.IsCivilian())
                         {
-                            if(!UnitState.bRemovedFromPlay)
+                            if(UnitState.GetMyTemplate().bIsSoldier == true)
                             {
-                                LivingUnitCount++;
+                                if(!UnitState.bRemovedFromPlay)
+                                {
+                                    LivingUnitCount++;
+                                }
                             }
                         }
                     }

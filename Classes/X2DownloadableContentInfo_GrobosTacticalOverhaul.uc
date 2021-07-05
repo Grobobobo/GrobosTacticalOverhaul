@@ -12,12 +12,27 @@ var config array<name> PrimaryWeaponAbilities;
 var config array<name> SecondaryWeaponAbilities;
 
 var config int MINDFLAY_COOLDOWN;
+var config int GRAZE_BAND_WIDTH;
+var config bool GUARANTEED_HIT_ABILITIES_IGNORE_GRAZE_BAND;
+
+var config bool ALLOW_NEGATIVE_DODGE;
+var config bool DODGE_CONVERTS_GRAZE_TO_MISS;
 
 /// <summary>
 /// This method is run if the player loads a saved game that was created prior to this DLC / Mod being installed, and allows the 
 /// DLC / Mod to perform custom processing in response. This will only be called once the first time a player loads a save that was
 /// create without the content installed. Subsequent saves will record that the content was installed.
 /// </summary>
+struct ToHitAdjustments
+{
+	var int ConditionalCritAdjust;	// reduction in bonus damage chance from it being conditional on hitting
+	var int DodgeCritAdjust;		// reduction in bonus damage chance from enemy dodge
+	var int DodgeHitAdjust;			// reduction in hit chance from dodge converting graze to miss
+	var int FinalCritChance;
+	var int FinalSuccessChance;
+	var int FinalGrazeChance;
+	var int FinalMissChance;
+};
 static event OnLoadedSavedGame()
 {	
 }
@@ -137,15 +152,19 @@ static function UpdateStrategyTemplates()
 static function UpdateAbilities()
 {
 	local X2AbilityTemplateManager	          AllAbilities;
-	local X2AbilityTemplate                    CurrentAbility;
+	local X2AbilityTemplate                    CurrentAbility, Template;
 	local X2Effect_HuntersInstinctDamage_LW		DamageModifier;
+	local array<name> nAllAbiltyNames;
+	local name TemplateName;
+	
+
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
- 
+
 	// Fix Dark Events
 	AllAbilities.AddAbilityTemplate(class'X2Ability_DarkEvents_Fixed'.static.DarkEventAbility_Regeneration(), true);
 	// I dont think this is in game but if it is, its now fixed.
 	AllAbilities.AddAbilityTemplate(class'X2Ability_DarkEvents_Fixed'.static.DarkEventAbility_LightningReflexes(), true);
-	
+
 
 	// Cannot use Reload if Panicked, Berserk, Muton Rage or Frenzied
 	UpdateReload(AllAbilities);
@@ -317,6 +336,9 @@ static function UpdateAbilities()
     CurrentAbility.AdditionalAbilities.AddItem('WardenBonus'); 
 	X2AbilityTarget_MovingMelee(CurrentAbility.AbilityTargetStyle).MovementRangeAdjustment=1;
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('Takedown');
+    CurrentAbility.AdditionalAbilities.AddItem('SubdueBonus');
+
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ViciousBite');
 	MakeFreeAction(CurrentAbility);
 	
@@ -381,6 +403,20 @@ static function UpdateAbilities()
 
 	UpdateWrithe();
 	UpdateMindFlay();
+
+	AllAbilities.GetTemplateNames(nAllAbiltyNames);
+
+	foreach nAllAbiltyNames(TemplateName)
+	{
+		Template = AllAbilities.FindAbilityTemplate(TemplateName);
+
+		if (ClassIsChildOf(Template.AbilityToHitCalc.Class, class'X2AbilityToHitCalc_StandardAim'))
+		{
+			Template.AbilityToHitCalc.OverrideFinalHitChanceFns.AddItem(OverrideFinalHitChance);
+		}
+	}
+
+
 }
 
 static function UpdateItems()
@@ -621,6 +657,10 @@ static function UpdateItems()
 					EquipmentTemplate.Abilities.AddItem('AdrenalHPBonus');
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.HealthLabel, eStat_HP, 1);
 					break;
+				case 'Hellweave':
+				EquipmentTemplate.Abilities.RemoveItem('MachWeaveBonus');
+				EquipmentTemplate.Abilities.AddItem('Infighter');
+					break;
 				case 'TracerRounds':
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.AimLabel, eStat_Offense, class'X2Effect_TracerRounds_LW'.default.TRACER_AIM_MOD);
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.CritLabel, eStat_CritChance, class'X2Effect_TracerRounds_LW'.default.TRACER_CRIT_MOD);
@@ -759,6 +799,7 @@ static function UpdateCharacters()
 	   		case 'Thrall':
 				CharTemplate.Abilities.AddItem('WilltoSurvive');
 				CharTemplate.Abilities.AddItem('GrazingFire');
+				CharTemplate.Abilities.AddItem('PinningAttacks');
 				break;
 
 			case 'Sorcerer':
@@ -782,7 +823,8 @@ static function UpdateCharacters()
 				CharTemplate.Abilities.AddItem('HazmatSealBonus');
 	   			break;
 	   		case 'ProgenyLeader':
-			   CharTemplate.Abilities.AddItem('ChosenSoulStealer');
+			   CharTemplate.Abilities.AddItem('SustainingSphereAbility');
+			   CharTemplate.Abilities.AddItem('Fortress');
 	   			break;
 			
 			case 'Muton_Legionairre':
@@ -797,7 +839,7 @@ static function UpdateCharacters()
 				break;
 
 	   		case 'Sectoid_Dominator':
-			   CharTemplate.Abilities.AddItem('LowProfile');
+			   CharTemplate.Abilities.AddItem('TacticalSense_LW');
 			   break;
 	   		case 'Sectoid_Paladin':
 			   break;
@@ -806,7 +848,6 @@ static function UpdateCharacters()
 				CharTemplate.Abilities.AddItem('ChosenImmuneMelee');
 				break;
 	   		case 'Faceless':
-			
 			case 'Sectopod':
 				CharTemplate.Abilities.AddItem('ImpactCompensation_LW');
 				break;
@@ -821,7 +862,7 @@ static function UpdateCharacters()
 				
 			case 'SC_Leader':
 			case 'Ronin':
-				CharTemplate.Abilities.AddItem('LowProfile');
+				CharTemplate.Abilities.AddItem('TacticalSense_LW');
 				CharTemplate.Abilities.RemoveItem('DarkEventAbility_LightningReflexes');
 				break;
 			case 'Purifier':
@@ -839,8 +880,9 @@ static function UpdateCharacters()
 			CharTemplate.Abilities.AddItem('GrazingFire');
 	   		break;
 			
-
 			case 'AdvTurretM1':
+			CharTemplate.Abilities.AddItem('PinningAttacks');
+
 			break;
 			case 'AdvMEC_M1':
 				CharTemplate.Abilities.AddItem('DamageControl');
@@ -900,6 +942,11 @@ static function UpdateCharacters()
 			case 'SectoidCivilian':
 			case 'ViperCivilian':
 			CharTemplate.CharacterBaseStats[eStat_HP] = 5;
+			break;
+	   		//I have no idea why that's not the case in vanilla
+			case 'XComInquisitor':
+			case 'XComBreaker':
+			CharTemplate.bIsSoldier = true;
 			break;
 		   
 	  default:
@@ -1088,7 +1135,8 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Huntersinstinct', UnitState);
 			break;
 		case 'Sorcerer':
-			AddAbilityToSetUpData(SetupData,'Bastion', UnitState);
+			//AddAbilityToSetUpData(SetupData,'Bastion', UnitState);
+			AddAbilityToSetUpData(SetupData,'ChosenSoulStealer', UnitState);
 			break;
 		case 'Muton_Brute':
 			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
@@ -1107,8 +1155,8 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
 			break;
 		case 'ProgenyLeader':
-			AddAbilityToSetUpData(SetupData,'Bastion', UnitState);
-			AddAbilityToSetUpData(SetupData,'SurvivalInstinct_LW', UnitState);
+			//AddAbilityToSetUpData(SetupData,'Bastion', UnitState);
+			AddAbilityToSetUpData(SetupData,'ChosenSoulStealer', UnitState);
 			break;
 		
 		case 'Muton_Legionairre':
@@ -1130,6 +1178,7 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'PsychoticRage', UnitState);
 			break;
 		case 'Faceless':
+			AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
 		break;
 		
 		case 'Sectopod':
@@ -1192,11 +1241,12 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		case 'Sectoid_Necromancer':
 		case 'EPICSMG1Carrying_Dominator':
-			AddAbilityToSetUpData(SetupData,'LowProfile', UnitState);
+			AddAbilityToSetUpData(SetupData,'TacticalSense_LW', UnitState);
 			break;
 		case 'Bruiser':
 		case 'EPICPISTOL1Carrying_Guardian':
 			AddAbilityToSetUpData(SetupData,'HazmatSealBonus', UnitState);
+			AddAbilityToSetUpData(SetupData,'PinningAttacks', UnitState);
 			break;
 		case 'ConspiracyLeader':
 			break;
@@ -1214,7 +1264,10 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'ChosenRegenerate', UnitState);
 			break;
 		case 'Sorcerer':
-			AddAbilityToSetUpData(SetupData,'Fortress', UnitState);
+			//AddAbilityToSetUpData(SetupData,'Fortress', UnitState);
+			AddAbilityToSetUpData(SetupData,'SurvivalInstinct_LW', UnitState);
+
+
 			break;
 		case 'Muton_Brute':
 			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
@@ -1233,11 +1286,11 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
 			break;
 		case 'ProgenyLeader':
+			AddAbilityToSetUpData(SetupData,'SurvivalInstinct_LW', UnitState);
 			break;
 		
 		case 'Muton_Legionairre':
 			AddAbilityToSetUpData(SetupData,'PsychoticRage_LW', UnitState);
-
 			//AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
 			break;
 		case 'Viper_Adder':	
@@ -1260,6 +1313,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		case 'Faceless':
 			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
+			AddAbilityToSetUpData(SetupData,'PinningAttacks', UnitState);
 			break;
 		case 'Sectopod':
 			break;
@@ -1274,14 +1328,12 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 
 		case 'Purifier':
-			AddAbilityToSetUpData(SetupData,'Formidable', UnitState);
 			break;
 		case 'Guardian':
 			break;
 		case 'Commando':
 		case 'SacredCoilDJ':
 			AddAbilityToSetUpData(SetupData,'Impulse_LW', UnitState);
-
 		case 'AdvTurretM1':
 			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
 		break;
@@ -1300,7 +1352,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'HardlinerLeader':
 		case 'Hitman':
 		case 'EPICPISTOL2Carrying_Hitman':
-			AddAbilityToSetUpData(SetupData,'ChosenDragonRounds', UnitState);
+			AddAbilityToSetUpData(SetupData,'ChosenVenomRounds', UnitState);
 			break;
 		case 'Muton_Bomber':
 		case 'EPICSHOTGUN2Carrying_Bomber':
@@ -1309,7 +1361,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'EPICAR1Carrying_Adder':
 		case 'EPICAR2Carrying_Commando':
 		case 'EPICSHOTGUN1Carrying_Brute':
-			AddAbilityToSetUpData(SetupData,'ChosenVenomRounds', UnitState);
+			AddAbilityToSetUpData(SetupData,'ChosenDragonRounds', UnitState);
 			break;
 		case 'Viper_Cobra':
 		case 'EPICSMG2Carrying_Resonant':
@@ -1973,17 +2025,16 @@ static function UpdateGuard()
 {
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
-	local X2Effect_EnergyShield ShieldEffect;
+	local X2Effect_Resilience MyCritModifier;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('RiotAutoGuard');
 
-
-	ShieldEffect = new class'X2Effect_EnergyShield';
-	ShieldEffect.BuildPersistentEffect(1, false, true, false, eWatchRule_UnitTurnBegin);
-	ShieldEffect.SetDisplayInfo(ePerkBuff_Bonus, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, false, , Template.AbilitySourceName);
-	ShieldEffect.AddPersistentStatChange(eStat_ShieldHP, class'X2Ability_XMBPerkAbilitySet'.default.CHERUB_RIOT_GUARD_HP);
-	ShieldEffect.EffectName='Shieldwall';
-	Template.AddShooterEffect(ShieldEffect);
+	MyCritModifier = new class 'X2Effect_Resilience';
+	MyCritModifier.CritDef_Bonus = 50;
+	MyCritModifier.BuildPersistentEffect(1, false, true, false, eWatchRule_UnitTurnBegin);
+	MyCritModifier.SetDisplayInfo(ePerkBuff_Bonus, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage, false, , Template.AbilitySourceName);
+	MyCritModifier.EffectName='Shieldwall';
+	Template.AddShooterEffect(MyCritModifier);
 
 }
 
@@ -2042,7 +2093,7 @@ static function UpdateGeneratorTriggeredTemplate()
 	Trigger.ListenerData.Priority = 75;
 	AbilityTemplate.AbilityTriggers.AddItem(Trigger);
 
-	AbilityTemplate.AbilityShooterConditions.AddItem(class'X2Ability'.default.LivingShooterProperty);
+	//AbilityTemplate.AbilityShooterConditions.AddItem(class'X2Ability'.default.LivingShooterProperty);
 	SkipExclusions.AddItem(class'X2AbilityTemplateManager'.default.DisorientedName);
 	SkipExclusions.AddItem(class'X2StatusEffects'.default.BurningName);
 	SkipExclusions.AddItem(class'X2AbilityTemplateManager'.default.ConfusedName);
@@ -2080,7 +2131,7 @@ static function UpdateExtraPadding()
 
 	Template = AllAbilities.FindAbilityTemplate('ExtraPaddingBonus');
 	CritDefEffect = new class'X2Effect_Resilience';
-	CritDefEffect.CritDef_Bonus = 20;
+	CritDefEffect.CritDef_Bonus = 25;
 	CritDefEffect.BuildPersistentEffect (1, true, false, false);
 	Template.AddTargetEffect(CritDefEffect);
 
@@ -2145,6 +2196,8 @@ static function UpdateInfiltratorWeave()
 	DamageImmunity = new class'X2Effect_DamageImmunity';
 	DamageImmunity.ImmuneTypes.AddItem('Root');
 	DamageImmunity.BuildPersistentEffect(1, true, false, false);
+	Template.AddTargetEffect(DamageImmunity);
+
 }
 
 static function UpdateVentilate()
@@ -2168,7 +2221,7 @@ static function UpdateVentilate()
 	UnitCondition.RequireSquadmates       = false;
 	UnitCondition.FailOnNonUnits          = true;   
 	UnitCondition.RequireWithinRange      = true;
-	UnitCondition.WithinRange             = 576; // 8 tiles (96*8)
+	UnitCondition.WithinRange             = 768; // 8 tiles (96*8)
 	Template.AbilityTargetConditions.AddItem(UnitCondition);
 
 }
@@ -2491,8 +2544,163 @@ static function UpdtateSoulSiphon()
 	Template.AddTargetEffect(RemoveEffects);
 }
 
+static function bool OverrideFinalHitChance(X2AbilityToHitCalc AbilityToHitCalc, out ShotBreakdown ShotBreakdown)
+{
+	local X2AbilityToHitCalc_StandardAim	StandardAim;
+	local ToHitAdjustments					Adjustments;
+	local ShotModifierInfo					ModInfo;
+
+	StandardAim = X2AbilityToHitCalc_StandardAim(AbilityToHitCalc);
+	if (StandardAim == none)
+	{
+		return false;
+	}
+
+	GetUpdatedHitChances(StandardAim, ShotBreakdown, Adjustments);
+
+	// LWOTC Replacing the old FinalHitChance calculation with one that treats all graze
+	// as a hit.
+	//ShotBreakdown.FinalHitChance = ShotBreakdown.ResultTable[eHit_Success] + Adjustments.DodgeHitAdjust;
+	ShotBreakdown.FinalHitChance = Adjustments.FinalSuccessChance + Adjustments.FinalGrazeChance + Adjustments.FinalCritChance;
+	ShotBreakdown.ResultTable[eHit_Crit] = Adjustments.FinalCritChance;
+	ShotBreakdown.ResultTable[eHit_Success] = Adjustments.FinalSuccessChance;
+	ShotBreakdown.ResultTable[eHit_Graze] = Adjustments.FinalGrazeChance;
+	ShotBreakdown.ResultTable[eHit_Miss] = Adjustments.FinalMissChance;
+
+	if(Adjustments.DodgeHitAdjust != 0)
+	{
+		ModInfo.ModType = eHit_Success;
+		ModInfo.Value   = Adjustments.DodgeHitAdjust;
+		ModInfo.Reason  = class'XLocalizedData'.default.DodgeStat;
+		ShotBreakdown.Modifiers.AddItem(ModInfo);
+	}
+	if(Adjustments.ConditionalCritAdjust != 0)
+	{
+		ModInfo.ModType = eHit_Crit;
+		ModInfo.Value   = Adjustments.ConditionalCritAdjust;
+		ModInfo.Reason  = "Aim";
+		ShotBreakdown.Modifiers.AddItem(ModInfo);
+	}
+	if(Adjustments.DodgeCritAdjust != 0)
+	{
+		ModInfo.ModType = eHit_Crit;
+		ModInfo.Value   = Adjustments.DodgeCritAdjust;
+		ModInfo.Reason  = "Graze";
+		ShotBreakdown.Modifiers.AddItem(ModInfo);
+	}
+
+	return true;
+}
+
+static function GetUpdatedHitChances(X2AbilityToHitCalc_StandardAim ToHitCalc, out ShotBreakdown ShotBreakdown, out ToHitAdjustments Adjustments)
+{
+	local int GrazeBand;
+	local int CriticalChance, DodgeChance;
+	local int MissChance, HitChance, CritChance;
+	local int GrazeChance, GrazeChance_Hit, GrazeChance_Miss;
+	local int CritPromoteChance_HitToCrit;
+	local int CritPromoteChance_GrazeToHit;
+	local int DodgeDemoteChance_CritToHit;
+	local int DodgeDemoteChance_HitToGraze;
+	local int DodgeDemoteChance_GrazeToMiss;
+	local EAbilityHitResult HitResult;
+	local ShotModifierInfo	ModInfo;
 
 
+	// STEP 1 "Band of hit values around nominal to-hit that results in a graze
+	GrazeBand = default.GRAZE_BAND_WIDTH;
 
+	// options to zero out the band for certain abilities -- either GuaranteedHit or an ability-by-ability
+	if (default.GUARANTEED_HIT_ABILITIES_IGNORE_GRAZE_BAND && ToHitCalc.bGuaranteedHit)
+	{
+		GrazeBand = 0;
+	}
+
+	HitChance = ShotBreakdown.ResultTable[eHit_Success];
+	// LWOTC: If hit chance is within grazeband of either 0 or 100%, then adjust
+	// the band so that 100% is a hit and 0% is a miss.
+	if (HitChance < GrazeBand)
+	{
+		GrazeBand = Max(0, HitChance);
+	}
+	else if (HitChance > (100 - GrazeBand))
+	{
+		GrazeBand = Max(0, 100 - HitChance);
+	}
+	// End LWOTC change
+
+	GrazeChance_Hit = Clamp(HitChance, 0, GrazeBand); // captures the "low" side where you just barely hit
+	GrazeChance_Miss = Clamp(100 - HitChance, 0, GrazeBand);  // captures the "high" side where  you just barely miss
+	GrazeChance = GrazeChance_Hit + GrazeChance_Miss;
+
+	
+	if (GrazeChance_Hit > 0)
+	{
+		ModInfo.ModType = eHit_Success;
+		ModInfo.Value   = GrazeChance_Hit;
+		ModInfo.Reason  = "Graze Band";
+		Shotbreakdown.Modifiers.AddItem(ModInfo);
+	}
+	
+
+	//STEP 2 Update Hit Chance to remove GrazeChance -- for low to-hits this can be zero
+	HitChance = Clamp(Min(100, HitChance)-GrazeChance_Hit, 0, 100-GrazeChance);
+
+	//STEP 3 "Crits promote from graze to hit, hit to crit
+	CriticalChance = ShotBreakdown.ResultTable[eHit_Crit];
+	if (default.ALLOW_NEGATIVE_DODGE && ShotBreakdown.ResultTable[eHit_Graze] < 0)
+	{
+		// negative dodge acts like crit, if option is enabled
+		CriticalChance -= ShotBreakdown.ResultTable[eHit_Graze];
+	}
+	CriticalChance = Clamp(CriticalChance, 0, 100);
+	CritPromoteChance_HitToCrit = Round(float(HitChance) * float(CriticalChance) / 100.0);
+
+	CritPromoteChance_GrazeToHit = Round(float(GrazeChance) * float(CriticalChance) / 100.0);
+
+
+	CritChance = CritPromoteChance_HitToCrit; // crit chance is the chance you promoted to crit
+	HitChance = HitChance + CritPromoteChance_GrazeToHit - CritPromoteChance_HitToCrit;  // add chance for promote from dodge, remove for promote to crit
+	GrazeChance = GrazeChance - CritPromoteChance_GrazeToHit; // remove chance for promote to hit
+
+
+	//save off loss of crit due to conditional on to-hit
+	Adjustments.ConditionalCritAdjust = -(CriticalChance - CritPromoteChance_HitToCrit);
+
+	//STEP 4 "Dodges demotes from crit to hit, hit to graze, (optional) graze to miss"
+	if (ShotBreakdown.ResultTable[eHit_Graze] > 0)
+	{
+		DodgeChance = Clamp(ShotBreakdown.ResultTable[eHit_Graze], 0, 100);
+		DodgeDemoteChance_CritToHit = Round(float(CritChance) * float(DodgeChance) / 100.0);
+		DodgeDemoteChance_HitToGraze = Round(float(HitChance) * float(DodgeChance) / 100.0);
+		if(default.DODGE_CONVERTS_GRAZE_TO_MISS)
+		{
+			DodgeDemoteChance_GrazeToMiss = Round(float(GrazeChance) * float(DodgeChance) / 100.0);
+		}
+		CritChance = CritChance - DodgeDemoteChance_CritToHit;
+		HitChance = HitChance + DodgeDemoteChance_CritToHit - DodgeDemoteChance_HitToGraze;
+		GrazeChance = GrazeChance + DodgeDemoteChance_HitToGraze - DodgeDemoteChance_GrazeToMiss;
+
+		//save off loss of crit due to dodge demotion
+		Adjustments.DodgeCritAdjust = -DodgeDemoteChance_CritToHit;
+
+		//save off loss of to-hit due to dodge demotion of graze to miss
+		Adjustments.DodgeHitAdjust = -DodgeDemoteChance_GrazeToMiss;
+	}
+
+	//STEP 5 Store
+	Adjustments.FinalCritChance = CritChance;
+	Adjustments.FinalSuccessChance = HitChance;
+	Adjustments.FinalGrazeChance = GrazeChance;
+
+	//STEP 6 Miss chance is what is left over
+	MissChance = 100 - (CritChance + HitChance + GrazeChance);
+	Adjustments.FinalMissChance = MissChance;
+	if(MissChance < 0)
+	{
+		//This is an error so flag it
+		`REDSCREEN("OverrideToHit : Negative miss chance!");
+	}
+}
 
  
