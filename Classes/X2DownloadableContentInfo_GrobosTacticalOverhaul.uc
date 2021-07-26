@@ -799,7 +799,7 @@ static function UpdateCharacters()
 	   		case 'Thrall':
 				CharTemplate.Abilities.AddItem('WilltoSurvive');
 				CharTemplate.Abilities.AddItem('GrazingFire');
-				CharTemplate.Abilities.AddItem('PinningAttacks');
+				//CharTemplate.Abilities.AddItem('PinningAttacks');
 				break;
 
 			case 'Sorcerer':
@@ -2329,6 +2329,7 @@ static function UpdateRiotBash()
 	Template = AllAbilities.FindAbilityTemplate('RiotBash');
 
 	MakeNonTurnEnding(Template);
+	Template.AbilityCooldown = CreateCooldown(3);
 	foreach Template.AbilityTargetEffects(TargetEffect)
 	{
 		DamageEffect = X2Effect_ApplyWeaponDamage(TargetEffect);
