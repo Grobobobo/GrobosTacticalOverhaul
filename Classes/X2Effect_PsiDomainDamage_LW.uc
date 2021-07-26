@@ -91,4 +91,5 @@ simulated function AddX2ActionsForVisualization_Removed(XComGameState VisualizeG
 defaultproperties
 {
 	bDisplayInSpecialDamageMessageUI = true
+	DuplicateResponse = eDupe_Allow
 }
