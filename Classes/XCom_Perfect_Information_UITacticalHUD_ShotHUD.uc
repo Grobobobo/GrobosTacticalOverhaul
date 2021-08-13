@@ -21,8 +21,8 @@ var config bool PREVIEW_MINIMUM, AIM_LEFT_OF_CRIT, SHOW_DODGE, SHOW_CRIT_DMG, PR
 simulated function Update()
 {
     local bool isValidShot;
-    local string ShotName, ShotDescription, ShotDamage;
-    local int HitChance, CritChance, TargetIndex, MinDamage, MaxDamage, AllowsShield;
+    local string ShotName, ShotDescription;
+    local int HitChance, CritChance, TargetIndex, AllowsShield;
     local ShotBreakdown kBreakdown;
     local StateObjectReference Shooter, Target, EmptyRef;
     local XComGameState_Ability SelectedAbilityState;
@@ -43,7 +43,6 @@ simulated function Update()
 
 	local int GrimyHitChance, GrimyCritChance, GrimyCritDmg;
 	local int GrimyGrazeChance;
-	local int GrimyFullDamageHitChance;
 
     local int GrimyHitWidth, GrimyCritWidth, GrimyGrazeWidth, GrimyMissWidth;
     local string FontString;
@@ -201,8 +200,6 @@ simulated function Update()
         {
             SelectedAbilityState.GetDamagePreview(kTarget.PrimaryTarget, MinDamageValue, MaxDamageValue, AllowsShield);
         }
-        MinDamage = MinDamageValue.Damage;
-        MaxDamage = MaxDamageValue.Damage;
             /*
         if (MinDamage > 0 && MaxDamage > 0)
         {

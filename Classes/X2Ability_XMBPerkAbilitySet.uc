@@ -1568,6 +1568,7 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+
 	HitandRunEffect = new class'X2Effect_HitandRun';
 	HitandRunEffect.BuildPersistentEffect(1, true, false, false);
 	HitandRunEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage,,,Template.AbilitySourceName);
@@ -1583,17 +1584,28 @@ static function X2AbilityTemplate AddHitandSlitherAbility()
 
 static function X2AbilityTemplate CreateSecondaryMeleeBuff(name TemplateName, int Tier2Bonus, int Tier3Bonus)
 {
-	local X2AbilityTemplate                 Template;
+	local X2AbilityTemplate					Template;
 	local X2Effect_SecondaryMeleeBonus				MeleeBuffsEffect;
 
+	`CREATE_X2ABILITY_TEMPLATE (Template, TemplateName);
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
 	MeleeBuffsEffect = new class'X2Effect_SecondaryMeleeBonus';
     MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
     MeleeBuffsEffect.MeleeDamageBonusTier2 = Tier2Bonus;
     MeleeBuffsEffect.MeleeDamageBonusTier3 = Tier3Bonus;
-
-	Template = Passive(TemplateName, "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 	Template.bDontDisplayInAbilitySummary = true;
 
+	//  NOTE: Visualization handled in X2Effect_HitandRun
 	return Template;
 }
 
@@ -1602,12 +1614,25 @@ static function X2AbilityTemplate CreateSubdueBonusDamageBuff(name TemplateName,
 	local X2AbilityTemplate                 Template;
 	local X2Effect_SubdueBonusDamage				MeleeBuffsEffect;
 
+	`CREATE_X2ABILITY_TEMPLATE (Template, TemplateName);
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
 	MeleeBuffsEffect = new class'X2Effect_SubdueBonusDamage';
     MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
     MeleeBuffsEffect.MeleeDamageBonusTier2 = Tier2Bonus;
     MeleeBuffsEffect.MeleeDamageBonusTier3 = Tier3Bonus;
-
-	Template = Passive(TemplateName, "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
 	Template.bDontDisplayInAbilitySummary = true;
 
 	return Template;
@@ -1617,12 +1642,26 @@ static function X2AbilityTemplate CreateMindFlayDamageBuff()
 	local X2AbilityTemplate                 Template;
 	local X2Effect_MindFlayBonusDamage				MeleeBuffsEffect;
 
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'MindFlayBonusDamage');
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
 	MeleeBuffsEffect = new class'X2Effect_MindFlayBonusDamage';
     MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
     MeleeBuffsEffect.MindFlayDamageBonusTier2 = 1;
     MeleeBuffsEffect.MindFlayDamageBonusTier3 = 2;
 
-	Template = Passive('MindFlayBonusDamage', "img:///UILibrary_PerkIcons.UIPerk_combatstims", false, MeleeBuffsEffect);
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
 	Template.bDontDisplayInAbilitySummary = true;
 
 	return Template;
@@ -2175,12 +2214,14 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 	local X2AbilityCost_ActionPoints        ActionPointCost;
 	local X2Condition_UnitEffects			UnitEffects;
 	local X2Condition_AndroidReinforcements RNFCondition;
+	local X2AbilityMultiTarget_Radius RadiusMultiTarget;
+	local X2AbilityTarget_Cursor	CursorTarget;
 
 	`CREATE_X2ABILITY_TEMPLATE(Template, 'XComCallForAndroidReinforcements');
 
 	Template.ShotHUDPriority = class'UIUtilities_Tactical'.const.MUST_RELOAD_PRIORITY;
 	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_ShowIfAvailable;
-
+	Template.IconImage = "img:///UILibrary_XPerkIconPack.UIPerk_move_command";
 	//Costs
 	ActionPointCost = new class'X2AbilityCost_ActionPoints';
 	ActionPointCost.iNumPoints = 1;
@@ -2194,13 +2235,24 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 	
 	Template.AbilityTriggers.AddItem(default.PlayerInputTrigger);
 
-	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.TargetingMethod = class'X2TargetingMethod_Teleport';
+
+	CursorTarget = new class'X2AbilityTarget_Cursor';
+	CursorTarget.bRestrictToSquadsightRange = true;
+	CursorTarget.FixedAbilityRange = 2;     // yes there is.
+	Template.AbilityTargetStyle = CursorTarget;
+	
+
+	RadiusMultiTarget = new class'X2AbilityMultiTarget_Radius';
+	RadiusMultiTarget.fTargetRadius = 0.25; // small amount so it just grabs one tile
+	Template.AbilityMultiTargetStyle = RadiusMultiTarget;
 
 
 	UnitEffects = new class'X2Condition_UnitEffects';
 	UnitEffects.AddExcludeEffect('MindControl', 'AA_UnitIsMindControlled');
 	Template.AbilityShooterConditions.AddItem(UnitEffects);
 
+	Template.ModifyNewContextFn = AndroidReinforcement_ModifyActivatedAbilityContext;
 	Template.BuildNewGameStateFn = AndroidReinforcement_BuildGameState; // TypicalAbility_BuildGameState;
 	Template.BuildVisualizationFn = CallInXComAndroidReinforcementVisualization;
 	Template.bShowActivation = true;
@@ -2213,7 +2265,6 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 	Template.Hostility = eHostility_Defensive;
 
 	//Template.CustomFireAnim = 'NO_CallReinforcements';
-
 	
 	RNFCondition = new class'X2Condition_AndroidReinforcements';
 	Template.AbilityShooterConditions.AddItem(RNFCondition);
@@ -2223,6 +2274,19 @@ static function X2AbilityTemplate CreateCallForAndroidReinforcements()
 	Template.bDisplayInUITacticalText = false;
 	Template.bDontDisplayInAbilitySummary = true;
 	return Template;
+}
+
+static simulated function AndroidReinforcement_ModifyActivatedAbilityContext(XComGameStateContext Context)
+{
+	local XComGameStateContext_Ability AbilityContext;
+	local PathingInputData InputData;
+
+
+	AbilityContext = XComGameStateContext_Ability(Context);
+	
+	// Build the MovementData for the path
+	// First posiiton is the current location
+	AbilityContext.InputContext.MovementPaths.AddItem(InputData);
 }
 
 
@@ -2237,19 +2301,18 @@ static function XComGameState AndroidReinforcement_BuildGameState(XComGameStateC
 	local XComGameState_MissionSite MissionSiteState;
 	local XComGameState_StrategyAction_Mission MissionAction;
 	local XComGameState NewGameState;
-	local XComGameState_BreachData BreachDataState;
-	local TTile TargetTile;
 	local X2Effect_GroupTimelineMove GroupMoveEffect;
-	local BreachPointInfo PointInfo;
 	local EffectAppliedData ApplyData;
+	local XComGameStateContext_Ability	AbilityContext;
 	//local array<StateObjectReference> AvailableAndroidReferences;
+	local vector NewLocation;
+	local TTile NewTileLocation; 
 
-
-
-	BreachDataState = XComGameState_BreachData(`XCOMHISTORY.GetSingleGameStateObjectForClass(class'XComGameState_BreachData'));
 
 	//Spawn the android at first breach point
 	NewGameState = TypicalAbility_BuildGameState(Context);
+
+	AbilityContext = XComGameStateContext_Ability(NewGameState.GetContext());	
 
 	History = `XCOMHISTORY;
 
@@ -2274,16 +2337,21 @@ static function XComGameState AndroidReinforcement_BuildGameState(XComGameStateC
 			AndroidState = XComGameState_Unit(NewGameState.ModifyStateObject(class'XComGameState_Unit', AndroidState.ObjectID));
 
 			AndroidState.ClearRemovedFromPlayFlag();
-			AndroidState.bCanTraverseRooms = true;
+			//AndroidState.bCanTraverseRooms = true;
 
 			//TargetTile = `XWORLD.GetTileCoordinatesFromPosition(BreachDataState.CachedBreachPointInfos[0].BreachPointLocation);
-
+			/*
 			foreach BreachDataState.CachedBreachPointInfos (PointInfo)
 			{
 				break;	
 			}
 			`XWORLD.GetFloorTileForPosition(PointInfo.BreachPointLocation, TargetTile);
-			AndroidState.SetVisibilityLocation(TargetTile);
+				*/
+
+			NewLocation = AbilityContext.InputContext.TargetLocations[0];
+			NewTileLocation = `XWORLD.GetTileCoordinatesFromPosition(NewLocation);
+			NewLocation = `XWORLD.GetPositionFromTileCoordinates(NewTileLocation);
+			AndroidState.SetVisibilityLocation(NewTileLocation);
 
 			AndroidState.ActionPoints.Length = 0;
 			/*
@@ -2327,27 +2395,58 @@ static function XComGameState AndroidReinforcement_BuildGameState(XComGameStateC
 static function CallInXComAndroidReinforcementVisualization(XComGameState VisualizeGameState)
 {
 	local VisualizationActionMetadata ActionMetadata;
-	local XComGameState_Unit UnitState;
+	local XComGameState_Unit UnitState, FreshlySpawnedUnitState;
 	local XComGameStateHistory History;
 	local X2Action_UpdateUI UpdateUIAction;
+	local XComContentManager ContentManager;
+	local X2Action_PlayEffect	SpawnEffectAction;
+	local TTile SpawnedUnitTile;
+
 
 	History = `XCOMHISTORY;
+
 	TypicalAbility_BuildVisualization(VisualizeGameState);
+
+	ContentManager = `CONTENT;
 
 
 	foreach VisualizeGameState.IterateByClassType(class'XComGameState_Unit', UnitState)
 	{
+
+		if( History.GetGameStateForObjectID(UnitState.ObjectID, , VisualizeGameState.HistoryIndex - 1) == None )
+		{	//Yes, this assumes that only 1 unit spawned.
+			FreshlySpawnedUnitState = UnitState;
+		}
 		ActionMetadata.StateObject_OldState = History.GetGameStateForObjectID(UnitState.ObjectID, eReturnType_Reference, VisualizeGameState.HistoryIndex - 1);
 		ActionMetadata.StateObject_NewState = VisualizeGameState.GetGameStateForObjectID(UnitState.ObjectID);
 		ActionMetadata.VisualizeActor = History.GetVisualizer(UnitState.ObjectID);
-
+	
 		class'X2Action_SyncVisualizer'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext());
 	}
+
+		FreshlySpawnedUnitState.GetKeystoneVisibilityLocation(SpawnedUnitTile);
+		
+		ActionMetadata.StateObject_OldState = History.GetGameStateForObjectID(FreshlySpawnedUnitState.ObjectID, eReturnType_Reference, VisualizeGameState.HistoryIndex - 1);
+		ActionMetadata.StateObject_NewState = VisualizeGameState.GetGameStateForObjectID(FreshlySpawnedUnitState.ObjectID);
+		ActionMetadata.VisualizeActor = History.GetVisualizer(FreshlySpawnedUnitState.ObjectID);
+
+		SpawnEffectAction = X2Action_PlayEffect(class'X2Action_PlayEffect'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
+		//SpawnEffectAction.EffectName = ContentManager.PsiWarpInEffectPathName;
+		SpawnEffectAction.EffectName = "FX_Psi_Bomb.P_Psi_Bomb_Explosion";
+		
+		SpawnEffectAction.EffectLocation = `XWORLD.GetPositionFromTileCoordinates(SpawnedUnitTile);
+		SpawnEffectAction.bStopEffect = false;
+
+		SpawnEffectAction = X2Action_PlayEffect(class'X2Action_PlayEffect'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
+		SpawnEffectAction.EffectName = ContentManager.PsiGateEffectPathName;
+		SpawnEffectAction.EffectLocation = `XWORLD.GetPositionFromTileCoordinates(SpawnedUnitTile);
+		SpawnEffectAction.bStopEffect = true;
 	
 		UpdateUIAction = X2Action_UpdateUI(class'X2Action_UpdateUI'.static.AddToVisualizationTree(ActionMetadata, VisualizeGameState.GetContext(), false, ActionMetadata.LastActionAdded));
 		UpdateUIAction.SpecificID = ActionMetadata.StateObject_NewState.ObjectID;
 		UpdateUIAction.UpdateType = EUIUT_GroupInitiative;
 	
+
 }
 
 static function X2AbilityTemplate Reposition()

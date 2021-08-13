@@ -11,12 +11,11 @@ function GetToHitAsTargetModifiers(XComGameState_Effect EffectState, XComGameSta
 		ShotMod.Reason = class'X2StatusEffects'.default.ShroudedFriendlyName;
 		ShotModifiers.AddItem(ShotMod);
     }
-    if (bFlanking)
-    {
+
         ShotMod.ModType = eHit_Crit;
         ShotMod.Reason = class'X2StatusEffects'.default.ShroudedFriendlyName;
-        ShotMod.Value = 0 - Attacker.GetCurrentStat(eStat_FlankingCritChance);
+        ShotMod.Value = -200;
         ShotModifiers.AddItem(ShotMod);
-    }
+    
 	
 }

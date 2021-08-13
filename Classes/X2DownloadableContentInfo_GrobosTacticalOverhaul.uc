@@ -272,7 +272,7 @@ static function UpdateAbilities()
 
 	UpdateSubservienceSacrifice(AllAbilities);
 	CurrentAbility = AllAbilities.FindAbilityTemplate('Impel');
-	MakeFreeAction(CurrentAbility);
+	MakeNonTurnEnding(CurrentAbility);
 
 
 	UpdtateSoulSiphon();
@@ -1298,7 +1298,8 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'LightningReflexes', UnitState);
 			break;
 		case 'Viper_Python':
-			AddAbilityToSetUpData(SetupData,'MindShield', UnitState);
+			//AddAbilityToSetUpData(SetupData,'MindShield', UnitState);
+			AddAbilityToSetUpData(SetupData,'PackMaster', UnitState);
 			break;
 
 		case 'Sectoid_Dominator':
@@ -2604,7 +2605,6 @@ static function GetUpdatedHitChances(X2AbilityToHitCalc_StandardAim ToHitCalc, o
 	local int DodgeDemoteChance_CritToHit;
 	local int DodgeDemoteChance_HitToGraze;
 	local int DodgeDemoteChance_GrazeToMiss;
-	local EAbilityHitResult HitResult;
 	local ShotModifierInfo	ModInfo;
 
 

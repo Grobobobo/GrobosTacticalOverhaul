@@ -35,7 +35,7 @@ static function array<X2DataTemplate> CreateTemplates()
 
 
     Weapons.AddItem(CreateTemplate_XComOperatorGremlin());
-    //Weapons.AddItem(CreateBreachSmokebomb());
+    Weapons.AddItem(CreateBreachSmokebomb());
 
 	Weapons.AddItem(CreateBreachCeasefirebomb());
 	Weapons.AddItem(CreateBreachFlashbomb());
@@ -126,6 +126,7 @@ static function X2DataTemplate CreateBreachSmokebomb()
 	Template.ItemCat = 'breachthrowable';
 
 	Template.ThrownGrenadeEffects.AddItem(new class'X2Effect_ApplySmokeGrenadeToWorld');
+	Template.ThrownGrenadeEffects.AddItem(class'X2StatusEffects'.static.CreateShroudedStatusEffect());
 	Template.LaunchedGrenadeEffects = Template.ThrownGrenadeEffects;
 	Template.bIgnoreRadialBlockingCover = true;
 	Template.GameArchetype = "WP_Grenade_Smoke.WP_Grenade_Smoke";
