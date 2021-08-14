@@ -179,6 +179,7 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(PinningAttacks());
 	Templates.AddItem(PinningAttacksPassive());
 	Templates.AddItem(TacticalSense());
+	Templates.AddItem(AddInfighterAbility());
 
 	
 	
@@ -3024,6 +3025,29 @@ static function EventListenerReturn HandleApplyEffectEventTrigger(
 	return Template;
 }
 
+	static function X2AbilityTemplate AddInfighterAbility()
+{
+	local X2AbilityTemplate						Template;
+	local X2Effect_Infighter					DodgeBonus;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'Infighter');
+	Template.IconImage = "img:///UILibrary_LW_PerkPack.LW_AbilityInfighter";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	Template.bIsPassive = true;
+	DodgeBonus = new class 'X2Effect_Infighter';
+	DodgeBonus.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
+	DodgeBonus.BuildPersistentEffect(1, true, false);
+	Template.AddTargetEffect(DodgeBonus);
+	Template.bCrossClassEligible = true;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  No visualization
+	return Template;
+}
 
 defaultproperties
 {

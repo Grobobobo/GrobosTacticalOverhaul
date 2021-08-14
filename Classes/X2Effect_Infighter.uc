@@ -1,9 +1,9 @@
 //--------------------------------------------------------------------------------------- 
 //  FILE:    X2Effect_Infighter
 //  AUTHOR:  John Lumpkin (Pavonis Interactive)
-//  PURPOSE: Sets up dodge bonuses for Infighter (Soldier gains +25 dodge against attacks within four tiles (including melee)
+//  PURPOSE: Sets up dodge bonuses for Infighter (Soldier gains +40 dodge against attacks within four tiles (including melee)
 //---------------------------------------------------------------------------------------
-class X2Effect_Infighter extends X2Effect_Persistent config (LW_SoldierSkills);
+class X2Effect_Infighter extends X2Effect_Persistent config (GameData_SoldierSkills);
 
 var config int INFIGHTER_DODGE_BONUS;
 var config int INFIGHTER_MAX_TILES;

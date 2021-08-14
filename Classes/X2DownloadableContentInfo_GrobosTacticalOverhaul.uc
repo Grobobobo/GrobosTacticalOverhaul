@@ -657,9 +657,9 @@ static function UpdateItems()
 					EquipmentTemplate.Abilities.AddItem('AdrenalHPBonus');
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.HealthLabel, eStat_HP, 1);
 					break;
-				case 'Hellweave':
-				EquipmentTemplate.Abilities.RemoveItem('MachWeaveBonus');
-				EquipmentTemplate.Abilities.AddItem('Infighter');
+				case 'MachWeave':
+					EquipmentTemplate.Abilities.AddItem('Infighter');
+					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, 1);
 					break;
 				case 'TracerRounds':
 					EquipmentTemplate.SetUIStatMarkup(class'XLocalizedData'.default.AimLabel, eStat_Offense, class'X2Effect_TracerRounds_LW'.default.TRACER_AIM_MOD);
@@ -700,7 +700,7 @@ static function UpdateItems()
 				EquipmentTemplate.Abilities.AddItem('WillToSurvive');
 				break;
 				case 'Android_Lining2':
-				EquipmentTemplate.Abilities.RemoveItem('Android_Lining2_Bonus');
+				//EquipmentTemplate.Abilities.RemoveItem('Android_Lining2_Bonus');
 				EquipmentTemplate.Abilities.AddItem('Brawler');
 				break;
 				case 'Android_Sheathing1':
@@ -710,7 +710,7 @@ static function UpdateItems()
 				break;
 				case 'Android_Sheathing2':
 				EquipmentTemplate.Abilities.RemoveItem('Android_Sheathing2_Bonus_Armor');
-				EquipmentTemplate.Abilities.AddItem('Resilience');
+				EquipmentTemplate.Abilities.AddItem('ImpactCompensation_LW');
 				break;
 				case 'Android_Servo1':
 				break;
@@ -1078,7 +1078,10 @@ static function bool AbilityTagExpandHandler(string InString, out string OutStri
 	case 'EXECUTIONER_CRIT_BONUS':
 		OutString = string(class'X2Effect_Executioner_LW'.default.EXECUTIONER_CRIT_BONUS);
 		return true;
-
+	case 'INFIGHTER_DODGE_BONUS':
+		OutString = string(class'X2Effect_Infighter'.default.INFIGHTER_DODGE_BONUS);
+		return true;
+		
 	default:
 	return false;
 }
@@ -2161,19 +2164,19 @@ static function UpdateMachWeave()
 {
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
-	local X2Effect Effect;
+	local X2Effect_PersistentStatChange	PersistentStatChangeEffect;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	Template = AllAbilities.FindAbilityTemplate('MachWeaveBonus');
 
-	foreach Template.AbilityTargetEffects(Effect)
-	{
-		if(Effect.IsA('X2Effect_PersistentStatChange') )
-		{
-			X2Effect_PersistentStatChange(Effect).AddPersistentStatChange(eStat_Mobility, 1);
-		}
-	}
 
+	RemoveAbilityTargetEffects(Template,'X2Effect_PersistentStatChange' );
+
+	PersistentStatChangeEffect = new class'X2Effect_PersistentStatChange';
+	PersistentStatChangeEffect.BuildPersistentEffect(1, true, false, false);
+	PersistentStatChangeEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false, , Template.AbilitySourceName);
+	PersistentStatChangeEffect.AddPersistentStatChange(eStat_Mobility, 1);
+	Template.AddTargetEffect(PersistentStatChangeEffect);
 }
 
 
