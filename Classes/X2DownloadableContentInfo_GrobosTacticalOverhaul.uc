@@ -54,21 +54,21 @@ static event OnLoadedSavedGameToStrategy()
 /// </summary>
 static event InstallNewCampaign(XComGameState StartState)
 {
-	local XComGameState_StrategyInventory HQInventory;
+	// local XComGameState_StrategyInventory HQInventory;
 
-	// Retrieve the strategy inventory object
-	foreach StartState.IterateByClassType(class'XComGameState_StrategyInventory', HQInventory)
-	{
-		break;
-	}
+	// // Retrieve the strategy inventory object
+	// foreach StartState.IterateByClassType(class'XComGameState_StrategyInventory', HQInventory)
+	// {
+	// 	break;
+	// }
 
-	// Add 3 of each weapon type to player's inventory
-	if( HQInventory != none )
-	{
-		HQInventory.AddItemByName(StartState, 'WPN_XComAR', 1);
-		HQInventory.AddItemByName(StartState, 'WPN_XComSMG', 1);
-		HQInventory.AddItemByName(StartState, 'WPN_XComShotgun', 1);
-	}
+	// // Add 3 of each weapon type to player's inventory
+	// if( HQInventory != none )
+	// {
+	// 	HQInventory.AddItemByName(StartState, 'WPN_XComAR', 1);
+	// 	HQInventory.AddItemByName(StartState, 'WPN_XComSMG', 1);
+	// 	HQInventory.AddItemByName(StartState, 'WPN_XComShotgun', 1);
+	// }
 }
 
 
@@ -527,7 +527,7 @@ static function UpdateItems()
 				case 'WPN_XComAR':
 				case 'WPN_EpicAR_1':
 				case 'WPN_EpicAR_2':
-					WeaponTemplate.bisGenericWeapon=true;
+					//WeaponTemplate.bisGenericWeapon=true;
 					break;
 
 				//shotgunmob
@@ -535,7 +535,7 @@ static function UpdateItems()
 				case 'WPN_XComShotgun':
 				case 'WPN_EpicShotgun_1':
 				case 'WPN_EpicShotgun_2':
-					WeaponTemplate.bisGenericWeapon=true;
+					//WeaponTemplate.bisGenericWeapon=true;
 				case 'Muton_Legionairre_WPN':
 				case 'Android_Shotgun':
 				case 'THRALL_SHOTGUN':
@@ -550,7 +550,7 @@ static function UpdateItems()
 				case 'WPN_XComSMG':
 				case 'WPN_EpicSMG_1':
 				case 'WPN_EpicSMG_2':
-					WeaponTemplate.bisGenericWeapon=true;
+					//WeaponTemplate.bisGenericWeapon=true;
 
 				case 'HITMAN_PISTOL':
 				case 'Praetorian_ShieldPistol_WPN':
