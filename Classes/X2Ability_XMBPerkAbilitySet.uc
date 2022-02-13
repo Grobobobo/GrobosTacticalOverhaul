@@ -169,6 +169,8 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(CreateMindFlayDamageBuff());
 	Templates.AddItem(CreateSoulFireDamageBuff());
 	Templates.AddItem(CreatePatchWorkDamageBuff());
+	Templates.AddItem(CreateTorqueDamageBuff());
+	Templates.AddItem(CreatePhaseLanceDamageBuff());
 	
 	Templates.AddItem(AddGrazingFireAbility());
 
@@ -1734,7 +1736,69 @@ static function X2AbilityTemplate CreatePatchWorkDamageBuff()
 	return Template;
 }
 
+static function X2AbilityTemplate CreateTorqueDamageBuff()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_TorqueBonusDamage		MeleeBuffsEffect;
 
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'TorqueBonusDamage');
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	MeleeBuffsEffect = new class'X2Effect_TorqueBonusDamage';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.TorqueDamageBonusTier2 = 0;
+    MeleeBuffsEffect.TorqueDamageBonusTier3 = 1;
+
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
+
+
+static function X2AbilityTemplate CreatePhaseLanceDamageBuff()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PhaseLanceBonusDamage		MeleeBuffsEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'PhaseLanceBonusDamage');
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	MeleeBuffsEffect = new class'X2Effect_PhaseLanceBonusDamage';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.PhaseLanceDamageBonusTier2 = 1;
+    MeleeBuffsEffect.PhaseLanceDamageBonusTier3 = 2;
+
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
+
+
+	
 static function X2AbilityTemplate AddSMGBonusAbility()
 {
 	local X2AbilityTemplate                 Template;	

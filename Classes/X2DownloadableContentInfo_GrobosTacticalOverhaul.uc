@@ -351,6 +351,13 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('SoulFire');
 	CurrentAbility.AdditionalAbilities.AddItem('SoulFireBonusDamage');
 	
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('Inquisitor_PoisonSpit');
+	CurrentAbility.AdditionalAbilities.AddItem('TorqueBonusDamage');
+	
+	CurrentAbility = AllAbilities.FindAbilityTemplate('PhaseLance');
+	CurrentAbility.AdditionalAbilities.AddItem('PhaseLanceBonusDamage');
+
 	CurrentAbility = AllAbilities.FindAbilityTemplate('DevastatingBlow');
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
 
@@ -403,7 +410,7 @@ static function UpdateAbilities()
 	CurrentAbility.bFeatureInCharacterUnlock = true;
 	CurrentAbility.bFeatureInStartingSquadUnlock = true;
 
-	
+
 
 	UpdateExtraPadding();
 	UpdateMachWeave();
@@ -543,7 +550,7 @@ static function UpdateItems()
 				case 'Muton_Brute_WPN':
 				case 'Liquidator_Shotgun':
 				case 'Muton_Bomber_WPN':
-				case 'BreakerShotgun':
+				case 'WPN_BreakerShotgun':
 					WeaponTemplate.Abilities.AddItem('Shotgun_StatPenalty');
 					WeaponTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, -1);
 					break;
@@ -2404,6 +2411,7 @@ static function UpdateCombatProtocol()
 		}
 	}
 
+	Template.AdditionalAbilities.AddItem('PatchWorkBonusDamage');
 }
 
 
