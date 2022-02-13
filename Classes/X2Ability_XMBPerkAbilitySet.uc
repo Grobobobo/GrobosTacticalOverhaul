@@ -1634,6 +1634,7 @@ static function X2AbilityTemplate CreateSubdueBonusDamageBuff(name TemplateName,
     MeleeBuffsEffect.MeleeDamageBonusTier2 = Tier2Bonus;
     MeleeBuffsEffect.MeleeDamageBonusTier3 = Tier3Bonus;
 	Template.AddTargetEffect(MeleeBuffsEffect);
+
 	Template.bCrossClassEligible = false;
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 	//  NOTE: Visualization handled in X2Effect_HitandRun
@@ -1995,7 +1996,7 @@ static function X2AbilityTemplate AddCritDamageWeaponBonus()
 	DamageEffect = new class'X2Effect_PrimaryHitBonusCritDamage';
 	DamageEffect.BonusCritDamage = 1;
 	DamageEffect.BuildPersistentEffect(1, true, false, false);
-	DamageEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
+	DamageEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, false,,Template.AbilitySourceName);
 	Template.AddTargetEffect(DamageEffect);
 	Template.bCrossClassEligible = true;
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;

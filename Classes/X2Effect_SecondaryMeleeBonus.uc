@@ -7,28 +7,68 @@ var int MeleeDamageBonusTier3;
 
 function int GetAttackingDamageModifier(XComGameState_Effect EffectState, XComGameState_Unit Attacker, Damageable TargetDamageable, XComGameState_Ability AbilityState, const out EffectAppliedData AppliedData, const int CurrentDamage, optional XComGameState NewGameState)
 {
-    local XComGameState_Item Armor;
+	local XComGameState_Item PrimaryWeapon;
+    local array<name> EquippedUpgrades;
 
-    Armor = Attacker.GetItemInSlot(eInvSlot_Armor);
+	PrimaryWeapon = Attacker.GetPrimaryWeapon();
+
+    if (PrimaryWeapon == none)
+    {
+        return 0;
+    }
+
+    EquippedUpgrades = PrimaryWeapon.GetMyWeaponUpgradeTemplateNames();
+
 
     if (AbilityState.GetMyTemplateName() == 'Takedown' || AbilityState.GetMyTemplateName() == 'HellionTakedown'
     || AbilityState.GetMyTemplateName() == 'RiotBash')
     {
-        return 0; // don't incresae damage for takedowns
+        return 0;
     }
-    if(Armor.GetMyTemplateName() == 'EnhancedKevlarArmor' && AbilityState.IsMeleeAbility())
+
+    if(IsWeaponTier3(EquippedUpgrades) && AbilityState.IsMeleeAbility())
     {
-           
-        return MeleeDamageBonusTier2;
-    }
-    else if(Armor.GetMyTemplateName() == 'MastercraftedKevlarArmor' && AbilityState.IsMeleeAbility())
-    {
-         
         return MeleeDamageBonusTier3;
     }
+    if(IsWeaponTier2(EquippedUpgrades) && AbilityState.IsMeleeAbility())
+    {   
+        return MeleeDamageBonusTier2;
+    }
+
 	return 0;
 }
 
+static function bool IsWeaponTier2(array<name> EquippedUpgrades)
+{
+    if(EquippedUpgrades.Find('EnhancedARsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('EnhancedShotgunsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('EnhancedSMGsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('EnhancedPistolsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('EnhancedGauntletsUpgrade') != INDEX_NONE)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+static function bool IsWeaponTier3(array<name> EquippedUpgrades)
+{
+    if(EquippedUpgrades.Find('MastercraftedARsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('MastercraftedShotgunsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('MastercraftedSMGsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('MastercraftedPistolsUpgrade') != INDEX_NONE ||
+    EquippedUpgrades.Find('MastercraftedGauntletsUpgrade') != INDEX_NONE)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
 
 defaultproperties
 {
