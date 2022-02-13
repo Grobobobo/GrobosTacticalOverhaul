@@ -401,6 +401,7 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('WardenGuardPassive');
 	CurrentAbility.bHideOnClassUnlock=false;
 	CurrentAbility.bFeatureInCharacterUnlock = true;
+	CurrentAbility.bFeatureInStartingSquadUnlock = true;
 
 	
 

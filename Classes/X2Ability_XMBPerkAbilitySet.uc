@@ -2587,13 +2587,15 @@ static function X2DataTemplate PackMaster()
 	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
 	Template.bHideOnClassUnlock = false;
 	Template.bFeatureInCharacterUnlock = true;
-
+	Template.bFeatureInStartingSquadUnlock = true;
+	
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
 
 	PackMasterEffect = new class'X2Effect_PackMaster';
 	PackMasterEffect.BuildPersistentEffect(1, true, true);
+	PackMasterEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
 
 	Template.AddTargetEffect(PackMasterEffect);
 
