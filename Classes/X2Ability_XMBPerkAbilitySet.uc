@@ -167,6 +167,9 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(Packmaster());
 	Templates.AddItem(Reposition());
 	Templates.AddItem(CreateMindFlayDamageBuff());
+	Templates.AddItem(CreateSoulFireDamageBuff());
+	Templates.AddItem(CreatePatchWorkDamageBuff());
+	
 	Templates.AddItem(AddGrazingFireAbility());
 
 	Templates.AddItem(ChosenDragonRounds());
@@ -180,6 +183,8 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(PinningAttacksPassive());
 	Templates.AddItem(TacticalSense());
 	Templates.AddItem(AddInfighterAbility());
+	Templates.AddItem(BerserkerBladestorm());
+	Templates.AddItem(BerserkerBladestormAttack());
 
 	
 	
@@ -1667,6 +1672,68 @@ static function X2AbilityTemplate CreateMindFlayDamageBuff()
 
 	return Template;
 }
+
+static function X2AbilityTemplate CreateSoulFireDamageBuff()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_SoulFireBonusDamage				MeleeBuffsEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'SoulFireBonusDamage');
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	MeleeBuffsEffect = new class'X2Effect_SoulFireBonusDamage';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.SoulFireDamageBonusTier2 = 1;
+    MeleeBuffsEffect.SoulFireDamageBonusTier3 = 2;
+
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
+
+static function X2AbilityTemplate CreatePatchWorkDamageBuff()
+{
+	local X2AbilityTemplate                 Template;
+	local X2Effect_PatchWorkBonusDamage		MeleeBuffsEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'PatchWorkBonusDamage');
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_combatstims";
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	
+	MeleeBuffsEffect = new class'X2Effect_PatchWorkBonusDamage';
+    MeleeBuffsEffect.BuildPersistentEffect(1, true, false); 
+    MeleeBuffsEffect.PatchWorkDamageBonusTier2 = 1;
+    MeleeBuffsEffect.PatchWorkDamageBonusTier3 = 2;
+
+	Template.AddTargetEffect(MeleeBuffsEffect);
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.bDisplayInUITooltip = false;
+	Template.bDisplayInUITacticalText = false;
+	Template.bDontDisplayInAbilitySummary = true;
+
+	return Template;
+}
+
+
 static function X2AbilityTemplate AddSMGBonusAbility()
 {
 	local X2AbilityTemplate                 Template;	
@@ -2518,6 +2585,7 @@ static function X2DataTemplate PackMaster()
 	Template.AbilitySourceName = 'eAbilitySource_Perk';
 	Template.eAbilityIconBehaviorHUD = eAbilityIconBehavior_NeverShow;
 	Template.bHideOnClassUnlock = false;
+	Template.bFeatureInCharacterUnlock = true;
 
 	Template.AbilityToHitCalc = default.DeadEye;
 	Template.AbilityTargetStyle = default.SelfTarget;
@@ -3048,6 +3116,31 @@ static function EventListenerReturn HandleApplyEffectEventTrigger(
 	//  No visualization
 	return Template;
 }
+
+
+	static function X2AbilityTemplate BerserkerBladestorm()
+{
+	local X2AbilityTemplate                 Template;
+
+	Template = PurePassive('BerserkerBladestorm', "img:///UILibrary_PerkIcons.UIPerk_beserk", false, 'eAbilitySource_Perk');
+	Template.AdditionalAbilities.AddItem('BerserkerBladestormAttack');
+
+	return Template;
+}
+
+static function X2AbilityTemplate BerserkerBladestormAttack(name TemplateName = 'BerserkerBladestormAttack')
+{
+	local X2AbilityTemplate Template;
+
+	Template = class'X2Ability_Hellion'.static.BladestormAttack(TemplateName);
+
+	Template.CustomFireAnim = 'FF_Melee';
+
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_beserk";
+
+	return Template;
+}
+
 
 defaultproperties
 {

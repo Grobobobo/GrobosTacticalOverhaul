@@ -18,6 +18,8 @@ var config bool GUARANTEED_HIT_ABILITIES_IGNORE_GRAZE_BAND;
 var config bool ALLOW_NEGATIVE_DODGE;
 var config bool DODGE_CONVERTS_GRAZE_TO_MISS;
 
+var config int BREAKER_RAGE_ATTACK_MALUS;
+var config int CCS_AMMO_COST;
 /// <summary>
 /// This method is run if the player loads a saved game that was created prior to this DLC / Mod being installed, and allows the 
 /// DLC / Mod to perform custom processing in response. This will only be called once the first time a player loads a save that was
@@ -341,6 +343,13 @@ static function UpdateAbilities()
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ViciousBite');
 	MakeFreeAction(CurrentAbility);
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('Relocate');
+	MakeFreeAction(CurrentAbility);
+	CurrentAbility.AbilityCooldown = CreateCooldown(2);
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('SoulFire');
+	CurrentAbility.AdditionalAbilities.AddItem('SoulFireBonusDamage');
 	
 	CurrentAbility = AllAbilities.FindAbilityTemplate('DevastatingBlow');
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = 25;
@@ -355,6 +364,7 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('MeleeStrike');
 	X2AbilityToHitCalc_StandardMelee(CurrentAbility.AbilityToHitCalc).BuiltInHitMod = -10;
 	MakeNonTurnEnding(CurrentAbility);
+
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ScatterShot');
 	X2AbilityToHitCalc_StandardAim(CurrentAbility.AbilityToHitCalc).bAllowCrit = true;
 
@@ -390,6 +400,7 @@ static function UpdateAbilities()
 
 	CurrentAbility = AllAbilities.FindAbilityTemplate('WardenGuardPassive');
 	CurrentAbility.bHideOnClassUnlock=false;
+	CurrentAbility.bFeatureInCharacterUnlock = true;
 
 	
 
@@ -403,6 +414,8 @@ static function UpdateAbilities()
 
 	UpdateWrithe();
 	UpdateMindFlay();
+
+	UpdateDevastatingPunch();
 
 	AllAbilities.GetTemplateNames(nAllAbiltyNames);
 
@@ -564,9 +577,16 @@ static function UpdateItems()
 					WeaponTemplate.SetUIStatMarkup(class'XLocalizedData'.default.MobilityLabel, eStat_Mobility, 1);
 					WeaponTemplate.Abilities.RemoveItem('SprayAndPray');
 					break;
-				default:
+
+				case 'Medikit':
+					WeaponTemplate.Abilities.RemoveItem('MedikitBonus');				
+				break;
+				case 'NanoMedikit':
+					WeaponTemplate.Abilities.RemoveItem('NanoMedikitBonus');
 				break;
 
+				default:
+				break;
 
 			}
 		}
@@ -829,6 +849,7 @@ static function UpdateCharacters()
 			
 			case 'Muton_Legionairre':
 				CharTemplate.Abilities.AddItem('Brawler');
+				CharTemplate.Abilities.AddItem('GrazingFire');
 	   			break;
 	   		case 'Viper_Adder':
 				CharTemplate.Abilities.AddItem('SurvivalInstinct_LW');
@@ -845,7 +866,10 @@ static function UpdateCharacters()
 			   break;
 			case 'Berserker':
 				CharTemplate.Abilities.AddItem('Brawler');
-				CharTemplate.Abilities.AddItem('ChosenImmuneMelee');
+				CharTemplate.Abilities.RemoveItem('TriggerRageDamageListener');
+				CharTemplate.Abilities.AddItem('BerserkerBladestorm');
+				CharTemplate.DefaultLoadout = 'Berserker_Loadout';				
+				//CharTemplate.Abilities.AddItem('ChosenImmuneMelee');
 				break;
 	   		case 'Faceless':
 			case 'Sectopod':
@@ -865,6 +889,10 @@ static function UpdateCharacters()
 				CharTemplate.Abilities.AddItem('TacticalSense_LW');
 				CharTemplate.Abilities.RemoveItem('DarkEventAbility_LightningReflexes');
 				break;
+			case 'Andromedon':
+				CharTemplate.Abilities.AddItem('GrazingFire');
+				break;
+				
 			case 'Purifier':
 				CharTemplate.Abilities.AddItem('TakeDown');
 				break;
@@ -1347,7 +1375,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'NeonateChryssalid':
 
 		case 'Andromedon':
-		AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
+			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
 		break;
 		case 'AndromedonRobot':
 		case 'Gatekeeper':
@@ -1854,7 +1882,7 @@ static function UpdatePsionicBomb()
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	Template = AllAbilities.FindAbilityTemplate('PsiBombStage2');
 
-	foreach Template.AbilityTargetEffects(Effect)
+	foreach Template.AbilityMultiTargetEffects(Effect)
 	{
 		if(Effect.IsA('X2Effect_ApplyWeaponDamage'))
 		{
@@ -2402,7 +2430,7 @@ static function UpdateRageSmash()
 	Template.AbilityTargetConditions.AddItem(UnitCondition);
 
 	MeleeHitCalc = new class'X2AbilityToHitCalc_StandardMelee';
-	//MeleeHitCalc.BuiltInHitMod = -15;
+	MeleeHitCalc.BuiltInHitMod = default.BREAKER_RAGE_ATTACK_MALUS;
 	Template.AbilityToHitCalc = MeleeHitCalc;
 }
 
@@ -2411,11 +2439,34 @@ static function UpdateCCS()
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2Condition_NotItsOwnTurn	NotItsOwnTurnCondition;
+	local X2Effect_Persistent CloseCombatSpecialistShooterEffect;
+	local X2Condition_UnitEffectsWithAbilitySource	CloseCombatSpecialistShooterCondition;
+	local X2AbilityCost_Ammo AmmoCost;
+
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	
 	Template = AllAbilities.FindAbilityTemplate('CloseCombatSpecialistShot');
-	Template.AbilityCooldown = CreateCooldown(1);
 
+	Template.AbilityCosts.length = 0;
+
+	AmmoCost = new class'X2AbilityCost_Ammo';
+	AmmoCost.iAmmo = default.CCS_AMMO_COST;	
+	Template.AbilityCosts.AddItem(AmmoCost);
+
+
+
+	//Prevent it getting multiple shots in a turn.
+	CloseCombatSpecialistShooterEffect = new class'X2Effect_Persistent';
+	CloseCombatSpecialistShooterEffect.BuildPersistentEffect(1, false, true, true, eWatchRule_UnitTurnBegin);
+	CloseCombatSpecialistShooterEffect.EffectName = 'CloseCombatSpecialistTarget';
+	CloseCombatSpecialistShooterEffect.bApplyOnMiss = true; //Only one chance, even if you miss (prevents crazy flailing counter-attack chains with a Muton, for example)
+	Template.AddShooterEffect(CloseCombatSpecialistShooterEffect);
+
+
+	CloseCombatSpecialistShooterCondition = new class'X2Condition_UnitEffectsWithAbilitySource';
+	CloseCombatSpecialistShooterCondition.AddExcludeEffect('CloseCombatSpecialistTarget', 'AA_DuplicateEffectIgnored');
+	Template.AbilityTargetConditions.AddItem(CloseCombatSpecialistShooterCondition);
+	
 
 	NotItsOwnTurnCondition = new class'X2Condition_NotItsOwnTurn';
 	Template.AbilityShooterConditions.AddItem(NotItsOwnTurnCondition);
@@ -2707,4 +2758,19 @@ static function GetUpdatedHitChances(X2AbilityToHitCalc_StandardAim ToHitCalc, o
 	}
 }
 
- 
+static function UpdateDevastatingPunch()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect Effect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+	Template = AllAbilities.FindAbilityTemplate('DevastatingPunch');
+
+	foreach Template.AbilityTargetEffects(Effect)
+	{
+		if(Effect.IsA('X2Effect_ApplyWeaponDamage'))
+		{
+			X2Effect_ApplyWeaponDamage(Effect).bIgnoreBaseDamage=true;
+		}
+	}
+}

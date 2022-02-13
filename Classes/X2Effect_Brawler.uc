@@ -14,7 +14,7 @@ function int GetDefendingDamageModifier(XComGameState_Effect EffectState, XComGa
 	local int   Tiles;
 
 	Tiles = Attacker.TileDistanceBetween(XComGameState_Unit(TargetDamageable));       
-	if (Tiles < default.BRAWLER_MAX_TILES)
+	if (Tiles < default.BRAWLER_MAX_TILES || AbilityState.IsMeleeAbility())
 	{
         return -CurrentDamage * default.BRAWLER_DR_PCT / 100;
     }

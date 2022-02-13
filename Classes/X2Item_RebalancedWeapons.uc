@@ -30,3 +30,52 @@ var config WeaponDamageValue MASTER_SHOTGUN_BONUS;
 
 var config WeaponDamageValue ENHANCED_PISTOLS_BONUS;
 var config WeaponDamageValue MASTER_PISTOLS_BONUS;
+
+var config int BERSERKER_IDEALRANGE;
+
+var config WeaponDamageValue BERSERKER_WPN_BASEDAMAGE;
+var config array<WeaponDamageValue> BERSERKER_WPN_EXTRADAMAGE;
+
+static function array<X2DataTemplate> CreateTemplates()
+{
+	local array<X2DataTemplate> Weapons;
+	Weapons.AddItem(CreateTemplate_Berserker_MeleeAttack());
+
+	return Weapons;
+}
+
+static function X2DataTemplate CreateTemplate_Berserker_MeleeAttack()
+{
+	local X2WeaponTemplate Template;
+
+	`CREATE_X2TEMPLATE(class'X2WeaponTemplate', Template, 'Berserker_MeleeAttack');
+
+	Template.ItemCat = 'weapon';
+	Template.WeaponCat = 'baton';
+	Template.WeaponTech = 'coventional';
+	Template.strImage = "img:///UILibrary_Common.Sword";
+	Template.InventorySlot = eInvSlot_PrimaryWeapon;
+	Template.StowedLocation = eSlot_RightBack;
+	// This all the resources; sounds, animations, models, physics, the works.
+	Template.GameArchetype = "";
+    Template.RemoveTemplateAvailablility(Template.BITFIELD_GAMEAREA_Multiplayer); //invalidates multiplayer availability
+
+	Template.iRange = 0;
+	Template.iRadius = 1;
+	Template.NumUpgradeSlots = 2;
+	Template.InfiniteAmmo = true;
+	Template.iPhysicsImpulse = 5;
+	Template.iIdealRange = default.BERSERKER_IDEALRANGE;
+
+	Template.BaseDamage = default.BERSERKER_WPN_BASEDAMAGE;
+	Template.ExtraDamage = default.BERSERKER_WPN_EXTRADAMAGE;
+	Template.BaseDamage.DamageType='Melee';
+	Template.iSoundRange = 2;
+	Template.iEnvironmentDamage = 10;
+
+	//Build Data
+	Template.StartingItem = false;
+	Template.CanBeBuilt = false;
+
+	return Template;
+}
