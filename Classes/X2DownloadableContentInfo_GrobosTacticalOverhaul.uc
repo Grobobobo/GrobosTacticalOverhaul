@@ -276,6 +276,9 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('Impel');
 	MakeNonTurnEnding(CurrentAbility);
 
+	CurrentAbility = AllAbilities.FindAbilityTemplate('MedicPinDown');
+	Make1ActionTurnEnding(CurrentAbility);
+
 
 	UpdtateSoulSiphon();
 
@@ -853,11 +856,14 @@ static function UpdateCharacters()
 	   		case 'ProgenyLeader':
 			   CharTemplate.Abilities.AddItem('SustainingSphereAbility');
 			   CharTemplate.Abilities.AddItem('Fortress');
+			   CharTemplate.Abilities.AddItem('TriggerHappy');
+			   CharTemplate.Abilities.AddItem('Formidable');
 	   			break;
 			
 			case 'Muton_Legionairre':
 				CharTemplate.Abilities.AddItem('Brawler');
 				CharTemplate.Abilities.AddItem('GrazingFire');
+				CharTemplate.Abilities.AddItem('LightningReflexes');
 	   			break;
 	   		case 'Viper_Adder':
 				CharTemplate.Abilities.AddItem('SurvivalInstinct_LW');
@@ -880,6 +886,8 @@ static function UpdateCharacters()
 				//CharTemplate.Abilities.AddItem('ChosenImmuneMelee');
 				break;
 	   		case 'Faceless':
+			   CharTemplate.Abilities.AddItem('KineticDampening');
+			   break;
 			case 'Sectopod':
 				CharTemplate.Abilities.AddItem('ImpactCompensation_LW');
 				break;
@@ -889,10 +897,12 @@ static function UpdateCharacters()
 				break;
 			case 'GP_Leader':
 				CharTemplate.Abilities.AddItem('LightningReflexes');
-				CharTemplate.Abilities.AddItem('Avenger_LW');
+				CharTemplate.Abilities.AddItem('MindShield');
+				CharTemplate.Abilities.AddItem('PrimaryReturnFire');
 				break;
 				
 			case 'SC_Leader':
+				CharTemplate.Abilities.AddItem('MindShield');
 			case 'Ronin':
 				CharTemplate.Abilities.AddItem('TacticalSense_LW');
 				CharTemplate.Abilities.RemoveItem('DarkEventAbility_LightningReflexes');
@@ -970,6 +980,8 @@ static function UpdateCharacters()
 			CharTemplate.Abilities.AddItem('TriggerHappy');
 			CharTemplate.Abilities.AddItem('PsychoticRage_LW');
 			CharTemplate.Abilities.AddItem('WillToSurvive');
+			CharTemplate.Abilities.AddItem('Formidable');
+			CharTemplate.Abilities.AddItem('MindShield');
 				break;
 
 			case 'HybridCivilian':
@@ -1117,7 +1129,15 @@ static function bool AbilityTagExpandHandler(string InString, out string OutStri
 	case 'INFIGHTER_DODGE_BONUS':
 		OutString = string(class'X2Effect_Infighter'.default.INFIGHTER_DODGE_BONUS);
 		return true;
-		
+	case 'FORMIDABLE_EXPLOSIVES_DR':
+		OutString = string(int(class'X2Ability_XMBPerkAbilitySet'.default.FORMIDABLE_EXPLOSIVES_DR * 100));
+		return true;
+	case 'FORMIDABLE_ABLATIVE_HP':
+		OutString = string(class'X2Ability_XMBPerkAbilitySet'.default.FORMIDABLE_ABLATIVE_HP);
+		return true;
+	case 'KINETIC_DAMPENING_DR_PER_TILE':
+		OutString = string(int(class'X2Ability_XMBPerkAbilitySet'.default.KINETIC_DAMPENING_DR_PER_TILE * 100));
+		return true;
 	default:
 	return false;
 }
@@ -1214,7 +1234,7 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Concentration_LW', UnitState);
 			break;
 		case 'Berserker':
-			AddAbilityToSetUpData(SetupData,'PsychoticRage', UnitState);
+			AddAbilityToSetUpData(SetupData,'ImpactCompensation_LW', UnitState);
 			break;
 		case 'Faceless':
 			AddAbilityToSetUpData(SetupData,'Brawler', UnitState);
@@ -1388,6 +1408,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'AndromedonRobot':
 		case 'Gatekeeper':
 		case 'SC_Leader':
+			break;
 
 		case 'HardlinerLeader':
 		case 'Hitman':
@@ -1640,6 +1661,25 @@ static function MakeNonTurnEnding(X2AbilityTemplate Template)
   ActionCost = new class'X2AbilityCost_ActionPoints';
   ActionCost.iNumPoints = 1;
   ActionCost.bConsumeAllPoints = false;
+  Template.AbilityCosts.AddItem(ActionCost);
+}
+
+static function Make1ActionTurnEnding(X2AbilityTemplate Template)
+{
+  local X2AbilityCost Cost;
+  local X2AbilityCost_ActionPoints ActionCost;
+
+  foreach Template.AbilityCosts(Cost)
+  {
+	  if(Cost.isA('X2AbilityCost_ActionPoints'))
+	  {
+		  Template.AbilityCosts.RemoveItem(Cost);
+	  }
+  }
+  
+  ActionCost = new class'X2AbilityCost_ActionPoints';
+  ActionCost.iNumPoints = 1;
+  ActionCost.bConsumeAllPoints = true;
   Template.AbilityCosts.AddItem(ActionCost);
 }
 

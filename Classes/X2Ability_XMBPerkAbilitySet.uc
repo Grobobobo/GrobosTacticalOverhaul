@@ -63,6 +63,13 @@ var config int EXTRA_PLATED_HP_BONUS;
 
 var config int TACSENSE_DEF_BONUS;
 var config int GRAZING_FIRE_SUCCESS_CHANCE;
+
+var config float FORMIDABLE_EXPLOSIVES_DR;
+var config int FORMIDABLE_ABLATIVE_HP;
+var config int FORMIDABLE_ARMOR_MITIGATION;
+
+var config float KINETIC_DAMPENING_DR_PER_TILE;
+
 var localized string LocRageFlyover;
 var localized string RageTriggeredFriendlyName;
 var localized string RageTriggeredFriendlyDesc;
@@ -187,6 +194,8 @@ static function array<X2DataTemplate> CreateTemplates()
 	Templates.AddItem(AddInfighterAbility());
 	Templates.AddItem(BerserkerBladestorm());
 	Templates.AddItem(BerserkerBladestormAttack());
+	Templates.AddItem(AddFormidableAbility());
+	Templates.AddItem(AddKineticDampening());
 
 	
 	
@@ -3209,6 +3218,83 @@ static function X2AbilityTemplate BerserkerBladestormAttack(name TemplateName = 
 }
 
 
+static function X2AbilityTemplate AddFormidableAbility()
+{
+	local X2AbilityTemplate						Template;
+	local X2AbilityTargetStyle                  TargetStyle;
+	local X2AbilityTrigger						Trigger;
+	local X2Effect_Formidable	                PaddingEffect;
+	local X2EFfect_PersistentStatChange			HPEffect;
+
+	`CREATE_X2ABILITY_TEMPLATE(Template, 'Formidable');
+
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.IconImage = "img:///UILibrary_PerkIcons.UIPerk_extrapadding";
+
+	Template.AbilityToHitCalc = default.DeadEye;
+
+	TargetStyle = new class'X2AbilityTarget_Self';
+	Template.AbilityTargetStyle = TargetStyle;
+
+	Trigger = new class'X2AbilityTrigger_UnitPostBeginPlay';
+	Template.AbilityTriggers.AddItem(Trigger);
+
+	PaddingEffect = new class'X2Effect_Formidable';
+	PaddingEffect.ExplosiveDamageReduction = default.FORMIDABLE_EXPLOSIVES_DR;
+	PaddingEffect.Armor_Mitigation = default.FORMIDABLE_ARMOR_MITIGATION;
+	PaddingEffect.BuildPersistentEffect(1, true, false);
+	PaddingEffect.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyHelpText(), Template.IconImage,,,Template.AbilitySourceName);
+	Template.AddTargetEffect(PaddingEffect);
+
+	HPEFfect = new class'X2Effect_PersistentStatChange';
+	HPEffect.BuildPersistentEffect(1, true, false);
+	HPEffect.AddPersistentStatChange(eStat_ShieldHP, default.FORMIDABLE_ABLATIVE_HP);
+	Template.AddTargetEFfect(HPEffect);
+
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  NOTE: No visualization on purpose!
+
+	Template.bCrossClassEligible = true;
+
+	if (default.FORMIDABLE_ARMOR_MITIGATION > 0)
+	{
+		Template.SetUIStatMarkup(class'XLocalizedData'.default.ArmorLabel, eStat_ArmorMitigation, PaddingEffect.ARMOR_MITIGATION);
+	}
+
+	return Template;
+}
+
+static function X2AbilityTemplate AddKineticDampening()
+{
+	local X2AbilityTemplate						Template;
+	local X2Effect_KineticDampening					DamageReduction;
+
+	`CREATE_X2ABILITY_TEMPLATE (Template, 'KineticDampening');
+	Template.IconImage = "img:///UILibrary_XPerkIconPack.UIPerk_defense_sniper";
+	Template.AbilitySourceName = 'eAbilitySource_Perk';
+	Template.eAbilityIconBehaviorHUD = EAbilityIconBehavior_NeverShow;
+	Template.Hostility = eHostility_Neutral;
+	Template.AbilityToHitCalc = default.DeadEye;
+	Template.AbilityTargetStyle = default.SelfTarget;
+	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
+	Template.bIsPassive = true;
+
+	DamageReduction = new class 'X2Effect_KineticDampening';
+	DamageReduction.DrPerTile = default.KINETIC_DAMPENING_DR_PER_TILE;
+	DamageReduction.SetDisplayInfo(ePerkBuff_Passive, Template.LocFriendlyName, Template.GetMyLongDescription(), Template.IconImage, true,,Template.AbilitySourceName);
+	DamageReduction.BuildPersistentEffect(1, true, false);
+	Template.AddTargetEffect(DamageReduction);
+
+	Template.bDisplayInUITooltip = true;
+	Template.bDisplayInUITacticalText = true;
+
+	Template.bCrossClassEligible = false;
+	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	//  No visualization
+	return Template;
+}
 defaultproperties
 {
 	VampUnitValue="VampAmount"
