@@ -428,6 +428,8 @@ static function UpdateAbilities()
 
 	UpdateDevastatingPunch();
 
+	UpdateRageSmash();
+
 	AllAbilities.GetTemplateNames(nAllAbiltyNames);
 
 	foreach nAllAbiltyNames(TemplateName)
@@ -2159,6 +2161,7 @@ static function UpdateGeneratorTriggeredTemplate()
 	local X2AbilityTemplate 				AbilityTemplate;
 	local X2AbilityTrigger_EventListener	Trigger;
 	local array<name>						SkipExclusions;
+	local X2Effect_ModifyTemplarFocus		FocusEffect;
 
 	AbilityTemplateManager = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 	AbilityTemplate = AbilityTemplateManager.FindAbilityTemplate('GeneratorTriggered');
@@ -2172,6 +2175,14 @@ static function UpdateGeneratorTriggeredTemplate()
 	Trigger.ListenerData.EventFn = class'XComGameState_Ability'.static.AbilityTriggerEventListener_Self;
 	Trigger.ListenerData.Priority = 75;
 	AbilityTemplate.AbilityTriggers.AddItem(Trigger);
+
+	//Remove the bonuses from focus gain
+	RemoveAbilityTargetEffects(AbilityTemplate,'X2Effect_ModifyTemplarFocus');
+
+	FocusEffect = new class'X2Effect_ModifyTemplarFocus';
+	FocusEffect.ModifyFocus = class'X2Ability_Warden'.default.GENERATORADDFOCUS;
+	AbilityTemplate.AddTargetEffect(FocusEffect);
+
 
 	//AbilityTemplate.AbilityShooterConditions.AddItem(class'X2Ability'.default.LivingShooterProperty);
 	SkipExclusions.AddItem(class'X2AbilityTemplateManager'.default.DisorientedName);
@@ -2460,23 +2471,10 @@ static function UpdateRageSmash()
 {
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
-	local X2Condition_UnitProperty	UnitCondition;
 	local X2AbilityToHitCalc_StandardMelee MeleeHitCalc;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	Template = AllAbilities.FindAbilityTemplate('BreakerRageAttack');
-
-	RemoveAbilityTargetConditions(Template, 'X2Condition_UnitProperty');
-
-	UnitCondition = new class 'X2Condition_UnitProperty';
-	UnitCondition.ExcludeAlive = false;
-	UnitCondition.ExcludeDead=true;
-	UnitCondition.ExcludeFriendlyToSource=false;
-	UnitCondition.ExcludeHostileToSource=false;
-	UnitCondition.TreatMindControlledSquadmateAsHostile=true;
-	UnitCondition.ExcludeUnBreached=true;
-
-	Template.AbilityTargetConditions.AddItem(UnitCondition);
 
 	MeleeHitCalc = new class'X2AbilityToHitCalc_StandardMelee';
 	MeleeHitCalc.BuiltInHitMod = default.BREAKER_RAGE_ATTACK_MALUS;
