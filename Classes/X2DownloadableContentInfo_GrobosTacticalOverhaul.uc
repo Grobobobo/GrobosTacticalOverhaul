@@ -429,6 +429,7 @@ static function UpdateAbilities()
 	UpdateDevastatingPunch();
 
 	UpdateRageSmash();
+	UpdateStandardShot();
 
 	AllAbilities.GetTemplateNames(nAllAbiltyNames);
 
@@ -2472,6 +2473,7 @@ static function UpdateRageSmash()
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2AbilityToHitCalc_StandardMelee MeleeHitCalc;
+	local X2Effect_RemoveEffects			RemoveEffect;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	Template = AllAbilities.FindAbilityTemplate('BreakerRageAttack');
@@ -2479,6 +2481,33 @@ static function UpdateRageSmash()
 	MeleeHitCalc = new class'X2AbilityToHitCalc_StandardMelee';
 	MeleeHitCalc.BuiltInHitMod = default.BREAKER_RAGE_ATTACK_MALUS;
 	Template.AbilityToHitCalc = MeleeHitCalc;
+
+	RemoveAbilityShooterEffects(Template,'X2Effect_RemoveEffects');
+
+
+	RemoveEffect = new class'X2Effect_RemoveEffects';
+	RemoveEffect.EffectNamesToRemove.AddItem('MutonRageBerserk');
+	RemoveEffect.bApplyOnMiss = true;
+	RemoveEffect.bApplyOnHit = true;
+	Template.AddShooterEffect(RemoveEffect);
+
+
+}
+
+static function UpdateStandardShot()
+{
+	local X2AbilityTemplate                    Template;
+	local X2AbilityTemplateManager 				AllAbilities;
+	local X2Effect_RemoveEffects			RemoveEffect;
+	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
+
+	Template = AllAbilities.FindAbilityTemplate('StandardShot');
+
+	RemoveEffect = new class'X2Effect_RemoveEffects';
+	RemoveEffect.EffectNamesToRemove.AddItem('MutonRageBerserk');
+	RemoveEffect.bApplyOnMiss = true;
+	RemoveEffect.bApplyOnHit = true;
+	Template.AddShooterEffect(RemoveEffect);
 }
 
 static function UpdateCCS()
