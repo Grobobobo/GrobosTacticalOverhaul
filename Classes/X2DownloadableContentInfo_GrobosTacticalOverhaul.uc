@@ -1397,13 +1397,14 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 		case 'Commando':
 		case 'SacredCoilDJ':
 			AddAbilityToSetUpData(SetupData,'Impulse_LW', UnitState);
+			break;
 		case 'AdvTurretM1':
 			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
-		break;
+			break;
 		case 'AdvMEC_M1':
-
 		case 'Chryssalid':
 		case 'NeonateChryssalid':
+			break;
 
 		case 'Andromedon':
 			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
