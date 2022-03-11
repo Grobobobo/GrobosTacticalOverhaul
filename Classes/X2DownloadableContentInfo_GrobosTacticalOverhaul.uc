@@ -2475,6 +2475,8 @@ static function UpdateRageSmash()
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2AbilityToHitCalc_StandardMelee MeleeHitCalc;
 	local X2Effect_RemoveEffects			RemoveEffect;
+	local X2Effect_ModifyTemplarFocus		FocusEffect;
+
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	Template = AllAbilities.FindAbilityTemplate('BreakerRageAttack');
@@ -2484,6 +2486,7 @@ static function UpdateRageSmash()
 	Template.AbilityToHitCalc = MeleeHitCalc;
 
 	RemoveAbilityShooterEffects(Template,'X2Effect_RemoveEffects');
+	RemoveAbilityShooterEffects(Template,'X2Effect_ModifyTemplarFocus');
 
 
 	RemoveEffect = new class'X2Effect_RemoveEffects';
@@ -2492,7 +2495,11 @@ static function UpdateRageSmash()
 	RemoveEffect.bApplyOnHit = true;
 	Template.AddShooterEffect(RemoveEffect);
 
-
+	FocusEffect = new class'X2Effect_ModifyTemplarFocus';
+	FocusEffect.bApplyOnHit = true;
+	FocusEffect.bApplyOnMiss = true;
+	FocusEffect.bRemoveAll = true;
+	Template.AddShooterEffect(FocusEffect);
 }
 
 static function UpdateStandardShot()
@@ -2500,6 +2507,7 @@ static function UpdateStandardShot()
 	local X2AbilityTemplate                    Template;
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2Effect_RemoveEffects			RemoveEffect;
+	local X2Effect_ModifyTemplarFocus		FocusEffect;
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
 
 	Template = AllAbilities.FindAbilityTemplate('StandardShot');
@@ -2509,6 +2517,13 @@ static function UpdateStandardShot()
 	RemoveEffect.bApplyOnMiss = true;
 	RemoveEffect.bApplyOnHit = true;
 	Template.AddShooterEffect(RemoveEffect);
+
+	FocusEffect = new class'X2Effect_ModifyTemplarFocus';
+	FocusEffect.bApplyOnHit = true;
+	FocusEffect.bApplyOnMiss = true;
+	FocusEffect.bRemoveAll = true;
+	Template.AddShooterEffect(FocusEffect);
+
 }
 
 static function UpdateCCS()
