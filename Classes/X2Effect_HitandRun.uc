@@ -31,6 +31,7 @@ function bool PostAbilityCostPaid(XComGameState_Effect EffectState, XComGameStat
 	local GameRulesCache_VisibilityInfo			VisInfo;
 	local int									iUsesThisTurn;
 	local UnitValue								HnRUsesThisTurn;
+	local XComGamestate_Item					WeaponState;
 
 	//  if under the effect of Serial, let that handle restoring the full action cost - will this work?
 	if (SourceUnit.IsUnitAffectedByEffectName(class'X2Effect_Serial'.default.EffectName))
@@ -45,8 +46,9 @@ function bool PostAbilityCostPaid(XComGameState_Effect EffectState, XComGameStat
 	if (iUsesThisTurn >= default.HNR_USES_PER_TURN)
 		return false;
 
-	//  match the weapon associated with Hit and Run to the attacking weapon
-	if (kAbility.SourceWeapon == EffectState.ApplyEffectParameters.ItemStateObjectRef)
+		WeaponState = XComGameState_Item(`XCOMHISTORY.GetGameStateForObjectID(kAbility.SourceWeapon.ObjectID));
+
+	if (WeaponState.InventorySlot == eInvSlot_PrimaryWeapon)
 	{
 		History = `XCOMHISTORY;
 		TargetUnit = XComGameState_Unit(NewGameState.GetGameStateForObjectID(AbilityContext.InputContext.PrimaryTarget.ObjectID));

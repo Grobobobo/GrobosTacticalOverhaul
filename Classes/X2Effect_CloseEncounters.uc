@@ -22,6 +22,7 @@ function bool PostAbilityCostPaid(XComGameState_Effect EffectState, XComGameStat
 	local XComGameState_Unit					TargetUnit;
 	local UnitValue								CEUsesThisTurn;
 	local int									iUsesThisTurn;
+	local XComGamestate_Item					WeaponState;
 	
 	if (SourceUnit.IsUnitAffectedByEffectName(class'X2Effect_Serial'.default.EffectName))
 		return false;
@@ -34,8 +35,9 @@ function bool PostAbilityCostPaid(XComGameState_Effect EffectState, XComGameStat
 	
 	if (kAbility == none)
 		return false;
-
-	if (kAbility.SourceWeapon != EffectState.ApplyEffectParameters.ItemStateObjectRef)
+	
+	WeaponState = XComGameState_Item(`XCOMHISTORY.GetGameStateForObjectID(kAbility.SourceWeapon.ObjectID));
+	if (WeaponState.InventorySlot != eInvSlot_PrimaryWeapon)
 		return false;
 
 	SourceUnit.GetUnitValue ('CloseEncountersUses', CEUsesThisTurn);

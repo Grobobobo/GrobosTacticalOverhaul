@@ -2542,7 +2542,7 @@ static function UpdateCCS()
 
 	CloseCombatSpecialistShooterCondition = new class'X2Condition_UnitEffectsWithAbilitySource';
 	CloseCombatSpecialistShooterCondition.AddExcludeEffect('CloseCombatSpecialistTarget', 'AA_DuplicateEffectIgnored');
-	Template.AbilityTargetConditions.AddItem(CloseCombatSpecialistShooterCondition);
+	Template.AbilityShooterConditions.AddItem(CloseCombatSpecialistShooterCondition);
 	
 
 	NotItsOwnTurnCondition = new class'X2Condition_NotItsOwnTurn';

@@ -2620,6 +2620,8 @@ static function X2AbilityTemplate Reposition()
 	Template.bCrossClassEligible = false;
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
 	//  NOTE: Visualization handled in X2Effect_HitandRun
+	Template.DefaultSourceItemSlot = eInvSlot_PrimaryWeapon;
+
 	return Template;
 }
 static function X2AbilityTemplate CloseandPersonal()
@@ -2642,6 +2644,7 @@ static function X2AbilityTemplate CloseandPersonal()
 	Template.AddTargetEffect (CritModifier);
 	Template.bCrossClassEligible = false;
 	Template.BuildNewGameStateFn = TypicalAbility_BuildGameState;
+	Template.DefaultSourceItemSlot = eInvSlot_PrimaryWeapon;
 
 	return Template;
 }
