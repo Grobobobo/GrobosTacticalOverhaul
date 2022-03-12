@@ -4,7 +4,7 @@
 //  PURPOSE: Sets up armor and defense bonuses for Combat Awareness; template definition
 //	specifies effect as conditional on having an OW point
 //---------------------------------------------------------------------------------------
-class X2Effect_Slippery extends X2Effect_BonusArmor config (LW_SoldierSkills);
+class X2Effect_Slippery extends X2Effect_BonusArmor config (GameData_SoldierSkills);
 
 var config int SLIPPERY_BONUS_ARMOR;
 var config int SLIPPERY_BONUS_DEFENSE;

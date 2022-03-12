@@ -3,7 +3,7 @@
 //  AUTHOR:  Amineri (Pavonis Interactive)
 //  PURPOSE: Implements AoE Damage immunities for Bastion, based on Solace ability
 //---------------------------------------------------------------------------------------
-class X2Effect_Bastion extends X2Effect_Persistent config(LW_SoldierSkills);
+class X2Effect_Bastion extends X2Effect_Persistent config(GameData_SoldierSkills);
 
 
 var config float BASTION_DISTANCE_SQ;

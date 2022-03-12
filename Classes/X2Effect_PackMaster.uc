@@ -4,7 +4,7 @@
 //  PURPOSE: Makes throwing grenades a free action
 //--------------------------------------------------------------------------------------- 
 
-class X2Effect_PackMaster extends X2Effect_Persistent config (LW_SoldierSkills);
+class X2Effect_PackMaster extends X2Effect_Persistent config (GameData_SoldierSkills);
 
 
 function RegisterForEvents(XComGameState_Effect EffectGameState)

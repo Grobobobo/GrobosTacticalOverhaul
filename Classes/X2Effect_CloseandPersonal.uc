@@ -4,7 +4,7 @@
 //  PURPOSE: Sets up range-based crit modifier for Close and Personal perk
 //--------------------------------------------------------------------------------------- 
 
-class X2Effect_CloseandPersonal extends X2Effect_Persistent config (LW_SoldierSkills);
+class X2Effect_CloseandPersonal extends X2Effect_Persistent config (GameData_SoldierSkills);
 
 var config array<int> CRITBOOST;
 

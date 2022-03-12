@@ -4,7 +4,7 @@
 //  PURPOSE: Makes throwing grenades a free action
 //--------------------------------------------------------------------------------------- 
 
-class X2Effect_FreeGrenades extends X2Effect_Persistent config (LW_SoldierSkills);
+class X2Effect_FreeGrenades extends X2Effect_Persistent config (GameData_SoldierSkills);
 
 var config array<name> VALID_GRENADE_ABILITIES;
 
