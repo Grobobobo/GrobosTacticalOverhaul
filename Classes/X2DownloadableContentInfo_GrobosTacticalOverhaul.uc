@@ -2533,7 +2533,7 @@ static function UpdateCCS()
 	local X2AbilityTemplateManager 				AllAbilities;
 	local X2Condition_NotItsOwnTurn	NotItsOwnTurnCondition;
 	local X2Effect_Persistent CloseCombatSpecialistShooterEffect;
-	local X2Condition_UnitEffectsWithAbilitySource	CloseCombatSpecialistShooterCondition;
+	local X2Condition_UnitEffects	CloseCombatSpecialistShooterCondition;
 	local X2AbilityCost_Ammo AmmoCost;
 
 	AllAbilities = class'X2AbilityTemplateManager'.static.GetAbilityTemplateManager();
@@ -2551,13 +2551,13 @@ static function UpdateCCS()
 	//Prevent it getting multiple shots in a turn.
 	CloseCombatSpecialistShooterEffect = new class'X2Effect_Persistent';
 	CloseCombatSpecialistShooterEffect.BuildPersistentEffect(1, false, true, true, eWatchRule_UnitTurnBegin);
-	CloseCombatSpecialistShooterEffect.EffectName = 'CloseCombatSpecialistTarget';
+	CloseCombatSpecialistShooterEffect.EffectName = 'CloseCombatSpecialistSource';
 	CloseCombatSpecialistShooterEffect.bApplyOnMiss = true; //Only one chance, even if you miss (prevents crazy flailing counter-attack chains with a Muton, for example)
 	Template.AddShooterEffect(CloseCombatSpecialistShooterEffect);
 
 
-	CloseCombatSpecialistShooterCondition = new class'X2Condition_UnitEffectsWithAbilitySource';
-	CloseCombatSpecialistShooterCondition.AddExcludeEffect('CloseCombatSpecialistTarget', 'AA_DuplicateEffectIgnored');
+	CloseCombatSpecialistShooterCondition = new class'X2Condition_UnitEffects';
+	CloseCombatSpecialistShooterCondition.AddExcludeEffect('CloseCombatSpecialistSource', 'AA_DuplicateEffectIgnored');
 	Template.AbilityShooterConditions.AddItem(CloseCombatSpecialistShooterCondition);
 	
 
