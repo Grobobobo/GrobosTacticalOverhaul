@@ -1262,7 +1262,8 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		case 'Commando':
 		case 'SacredCoilDJ':
-			AddAbilityToSetUpData(SetupData,'Packmaster', UnitState);
+			//AddAbilityToSetUpData(SetupData,'Packmaster', UnitState);
+			AddAbilityToSetUpData(SetupData,'CloseAndPersonal', UnitState);
 			break;
 		case 'AdvTurretM1':
 		AddAbilityToSetUpData(SetupData,'DamageControl', UnitState);
