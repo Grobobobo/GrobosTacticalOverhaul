@@ -429,7 +429,7 @@ static function UpdateAbilities()
 	UpdateDevastatingPunch();
 
 	UpdateRageSmash();
-	UpdateStandardShot();
+	//UpdateStandardShot();
 
 	AllAbilities.GetTemplateNames(nAllAbiltyNames);
 
