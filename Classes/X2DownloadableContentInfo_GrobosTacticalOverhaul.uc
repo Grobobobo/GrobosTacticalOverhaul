@@ -194,7 +194,7 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('ShieldGeneratorAbility');
 	CurrentAbility.AbilityCooldown = CreateCooldown(1);
 
-	CurrentAbility = AllAbilities.FindAbilityTemplate('TeleportDiskThrow');
+	CurrentAbility = AllAbilities.FindAbilityTemplate('TeleportDiscThrow');
 	MakeFreeAction(CurrentAbility);
 	
 
