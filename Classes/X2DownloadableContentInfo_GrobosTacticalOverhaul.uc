@@ -20,6 +20,10 @@ var config bool DODGE_CONVERTS_GRAZE_TO_MISS;
 
 var config int BREAKER_RAGE_ATTACK_MALUS;
 var config int CCS_AMMO_COST;
+
+var config int MOTILE_INDUCER_CHARGES;
+var config int KINETIC_SCREEN_CHARGES;
+
 /// <summary>
 /// This method is run if the player loads a saved game that was created prior to this DLC / Mod being installed, and allows the 
 /// DLC / Mod to perform custom processing in response. This will only be called once the first time a player loads a save that was
@@ -184,9 +188,20 @@ static function UpdateAbilities()
 	CurrentAbility = AllAbilities.FindAbilityTemplate('TargetingSystem');
 	CurrentAbility.AbilityCooldown = CreateCooldown(1);
  
+	CurrentAbility = AllAbilities.FindAbilityTemplate('AidBeaconAbility');
+	CurrentAbility.AbilityCooldown = CreateCooldown(1);
+	
+	CurrentAbility = AllAbilities.FindAbilityTemplate('ShieldGeneratorAbility');
+	CurrentAbility.AbilityCooldown = CreateCooldown(1);
+
+	CurrentAbility = AllAbilities.FindAbilityTemplate('TeleportDiskThrow');
+	MakeFreeAction(CurrentAbility);
+	
 
 	UpdateCCS();
 	UpdateCombatProtocol();
+
+
 
 
 	RemoveTheDeathFromHolyWarriorDeath();
@@ -599,6 +614,12 @@ static function UpdateItems()
 					WeaponTemplate.Abilities.RemoveItem('NanoMedikitBonus');
 				break;
 
+				case 'AidBeacon':
+					WeaponTemplate.iClipSize = default.MOTILE_INDUCER_CHARGES;
+					break;
+				case 'ShieldGenerator':
+					WeaponTemplate.iClipSize = default.KINETIC_SCREEN_CHARGES;
+					break;
 				default:
 				break;
 
@@ -2503,6 +2524,7 @@ static function UpdateRageSmash()
 	Template.AddShooterEffect(FocusEffect);
 }
 
+	/*
 static function UpdateStandardShot()
 {
 	local X2AbilityTemplate                    Template;
@@ -2526,7 +2548,7 @@ static function UpdateStandardShot()
 	Template.AddShooterEffect(FocusEffect);
 
 }
-
+*/
 static function UpdateCCS()
 {
 	local X2AbilityTemplate                    Template;

@@ -2039,7 +2039,7 @@ static function X2AbilityTemplate CreateSustainingShield()
 	Template.AbilityTargetStyle = default.SelfTarget;
 	Template.AbilityTriggers.AddItem(default.UnitPostBeginPlayTrigger);
 
-    ShieldedEffect = class'X2Ability_AdventShieldBearer'.static.CreateShieldedEffect(Template.LocFriendlyName, Template.GetMyLongDescription(), 3);
+    ShieldedEffect = class'X2Ability_AdventShieldBearer'.static.CreateShieldedEffect(Template.LocFriendlyName, Template.GetMyLongDescription(), 2);
 
 	Template.AddShooterEffect(ShieldedEffect);
 
