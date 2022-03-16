@@ -928,7 +928,7 @@ static function UpdateCharacters()
 			case 'SC_Leader':
 				CharTemplate.Abilities.AddItem('MindShield');
 			case 'Ronin':
-				CharTemplate.Abilities.AddItem('TacticalSense_LW');
+				CharTemplate.Abilities.AddItem('HazmatSealBonus');
 				CharTemplate.Abilities.RemoveItem('DarkEventAbility_LightningReflexes');
 				break;
 			case 'Andromedon':
@@ -956,7 +956,6 @@ static function UpdateCharacters()
 			break;
 			case 'AdvMEC_M1':
 				CharTemplate.Abilities.AddItem('DamageControl');
-				CharTemplate.Abilities.AddItem('Resilience');
 			break;
 	   		case 'Chryssalid':
 			case 'NeonateChryssalid':
@@ -1311,7 +1310,7 @@ static function GiveEnemiesAct3Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 		case 'Muton_Bomber':
 		case 'EPICSHOTGUN2Carrying_Bomber':
-			AddAbilityToSetUpData(SetupData,'FreeGrenades', UnitState);
+			AddAbilityToSetUpData(SetupData,'PackMaster', UnitState);
 			break;
 		case 'Liquidator':
 		case 'EPICAR1Carrying_Adder':
@@ -1410,6 +1409,7 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			break;
 
 		case 'Ronin':
+			AddAbilityToSetUpData(SetupData,'TacticalSense_LW', UnitState);
 			break;
 
 		case 'Purifier':
@@ -1424,6 +1424,8 @@ static function GiveEnemiesAct2Perks(XComGameState_Unit UnitState, out array<Abi
 			AddAbilityToSetUpData(SetupData,'Shredder', UnitState);
 			break;
 		case 'AdvMEC_M1':
+			AddAbilityToSetUpData(SetupData,'Resilience', UnitState);
+			break;
 		case 'Chryssalid':
 		case 'NeonateChryssalid':
 			break;
